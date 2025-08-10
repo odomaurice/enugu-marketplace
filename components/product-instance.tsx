@@ -28,14 +28,14 @@ const ProductInstance = () => {
   return (
     <div className="container py-8">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold my-8">Employee Food Ordering</h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold my-8">Employee Food Ordering</h1>
+        <p className="text-md text-gray-600 max-w-2xl mx-auto">
           Order fresh food products for your workplace. Available exclusively for registered employees.
         </p>
       </div>
 
       <div className="mb-12">
-        <h2 className="text-2xl font-bold mb-6">Featured Products</h2>
+        <h2 className="text-xl font-bold mb-6">Featured Products</h2>
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (

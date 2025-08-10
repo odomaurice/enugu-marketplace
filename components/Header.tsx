@@ -184,16 +184,10 @@ const Header = () => {
 
             {status === "unauthenticated" ? (
               <div className="flex flex-col gap-4 mt-6">
+               
                 <Button
                   asChild
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Link href="/login" onClick={closeMenu}>Login</Link>
-                </Button>
-                <Button
-                  asChild
-                  className="w-full bg-[#26c348] hover:bg-green-600"
+                  className="w-full bg-green-700 rounded-full hover:bg-green-600"
                 >
                   <Link href="/employee-login" onClick={closeMenu}>Employee Login</Link>
                 </Button>
