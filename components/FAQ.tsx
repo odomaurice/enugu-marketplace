@@ -16,7 +16,7 @@ const FAQ = () => {
 
   return (
     <section className="w-full font-header text-black md:my-24 my-12 px-3 py-12">
-      <h3 className="md:text-[30px] text-3xl md:text-center text-start font-bold mt-16 mb-6">
+      <h3 className="md:text-[30px] text-2xl md:text-center text-start font-bold mt-16 mb-6">
         Frequently Asked Questions
       </h3>
       <Accordion
