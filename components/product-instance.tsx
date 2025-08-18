@@ -61,6 +61,7 @@ const ProductInstance = () => {
                       src={product.product_image || '/placeholder-product.jpg'}
                       alt={product.name}
                       fill
+                      priority
                       className="object-cover rounded-t-lg"
                     />
                   </div>
@@ -89,7 +90,7 @@ const ProductInstance = () => {
       </div>
 
       <div className="text-center">
-        <Button asChild size="lg" className='bg-orange-800 hover:bg-orange-700'>
+        <Button asChild  className='bg-orange-800 w-full md:max-w-lg py-[1.5rem] hover:bg-orange-700'>
           <Link href="/products">View All Products</Link>
         </Button>
       </div>

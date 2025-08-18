@@ -1,149 +1,85 @@
+
 "use client";
 
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { TrendingUp } from "lucide-react";
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import { useQuery } from "@tanstack/react-query";
-import { LargeSkeleton } from "./AdminChartDialog";
 
-const chartConfig = {
-  desktop: {
-    label: "Completed",
-    color: "hsl(var(--chart-1))",
-  },
-  mobile: {
-    label: "Pending",
-    color: "hsl(var(--chart-2))",
-  },
-} satisfies ChartConfig;
+interface OrdersChartProps {
+  orders: any[];
+  products: any[];
+}
 
-// Generate dummy order data for the last 12 months
-const generateDummyOrderData = () => {
-  const months = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-  ];
-  
-  return months.map((month) => ({
-    month,
-    completed: Math.floor(Math.random() * 100) + 50, // Random between 50-150
-    pending: Math.floor(Math.random() * 30) + 10,   // Random between 10-40
-    total: 0 // Will be calculated
-  })).map(item => ({
-    ...item,
-    total: item.completed + item.pending
-  }));
-};
+export default function OrdersChart({ orders, products }: OrdersChartProps) {
+  // Process orders by month
+  const processOrderData = () => {
+    const monthlyData: Record<string, { completed: number; pending: number }> = {};
+    
+    // Initialize all months
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    months.forEach(month => {
+      monthlyData[month] = { completed: 0, pending: 0 };
+    });
 
-export function OrdersChart() {
-  const { data = generateDummyOrderData(), isLoading, isError, error } = useQuery({
-    queryKey: ["admin-orders-charts"],
-    queryFn: async () => {
-      // For future live data integration:
-      // const response = await fetch("/api/charts/admin-orders-chart");
-      // if (!response.ok) throw new Error("Failed to fetch order data");
-      // return response.json();
+    // Process orders
+    orders.forEach(order => {
+      const date = new Date(order.placedAt);
+      const month = months[date.getMonth()];
       
-      // For now, return dummy data but keep the async structure
-      return Promise.resolve(generateDummyOrderData());
-    },
-    // refetchInterval: 1000 * 60 * 5, // 5 minutes (can be enabled later)
-  });
+      if (order.orderStatus === 'DELIVERED') {
+        monthlyData[month].completed += 1;
+      } else {
+        monthlyData[month].pending += 1;
+      }
+    });
 
-  if (isLoading) {
-    return <LargeSkeleton />;
-  }
+    return months.map(month => ({
+      month,
+      completed: monthlyData[month].completed,
+      pending: monthlyData[month].pending,
+      total: monthlyData[month].completed + monthlyData[month].pending
+    }));
+  };
 
-  if (isError) {
-    return <p>{error?.message || "Error loading order data"}</p>;
-  }
+  const chartData = processOrderData();
 
   return (
-    <Card className="mb-6 md:w-1/2 w-full">
+    <Card className="mb-6 md:w-[70%] text-[14px] w-full">
       <CardHeader>
         <CardTitle className="text-[18px]">Orders</CardTitle>
         <CardDescription className="text-[14px]">
-          Showing order statistics for the last 12 months
+          Order statistics by month
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <ChartContainer config={chartConfig}>
-          <AreaChart
-            accessibilityLayer
-            data={data}
-            margin={{
-              left: 12,
-              right: 12,
-            }}
-          >
-            <CartesianGrid vertical={false} />
-            <XAxis
-              dataKey="month"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-            />
-            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-            <defs>
-              <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-desktop)"
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-desktop)"
-                  stopOpacity={0.1}
-                />
-              </linearGradient>
-              <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-mobile)"
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-mobile)"
-                  stopOpacity={0.1}
-                />
-              </linearGradient>
-            </defs>
-            <Area
-              dataKey="completed"
-              type="natural"
-              fill="url(#fillDesktop)"
-              fillOpacity={0.4}
-              stroke="var(--color-desktop)"
-              stackId="a"
-            />
-            <Area
-              dataKey="pending"
-              type="natural"
-              fill="url(#fillMobile)"
-              fillOpacity={0.4}
-              stroke="var(--color-mobile)"
-              stackId="a"
-            />
-          </AreaChart>
-        </ChartContainer>
+      <CardContent >
+        <AreaChart
+          width={400}
+          height={300}
+          data={chartData}
+          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="month" />
+          <YAxis />
+          <Tooltip />
+          <Area 
+            type="monotone" 
+            dataKey="completed" 
+            stackId="1" 
+            stroke="#8884d8" 
+            fill="#8884d8" 
+          />
+          <Area 
+            type="monotone" 
+            dataKey="pending" 
+            stackId="1" 
+            stroke="#82ca9d" 
+            fill="#82ca9d" 
+          />
+        </AreaChart>
       </CardContent>
       <CardFooter>
-        <div className="flex w-full items-start gap-2 text-sm">
+        <div className="flex w-[80%] items-start gap-2 text-[13px]">
           <div className="grid gap-2">
             <div className="flex items-center gap-2 font-medium leading-none">
               Order trends overview

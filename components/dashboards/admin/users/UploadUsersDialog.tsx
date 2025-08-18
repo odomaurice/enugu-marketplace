@@ -31,40 +31,224 @@ export function UploadUsersDialog({ token }: UploadUsersDialogProps) {
       setFile(e.target.files[0]);
     }
   };
+   const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (!file) {
+    toast.error("Please select a file to upload");
+    return;
+  }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!file) return;
+  setLoading(true);
 
-    setLoading(true);
-    const formData = new FormData();
-    formData.append("file", file);
+  try {
+    const csvContent = await file.text();
+    console.log("[DEBUG] Original CSV content:", csvContent);
 
-    try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/upload-users`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+    // Define CSV validation types
+    type CSVValidationResult = {
+      isValid: boolean;
+      errors: string[];
+      cleanedContent: string;
+    };
+
+    const validateCSV = (content: string): CSVValidationResult => {
+      const errors: string[] = [];
+      const lines = content.split('\n').filter(line => line.trim() !== '');
+
+      if (lines.length < 2) {
+        return {
+          isValid: false,
+          errors: ["CSV must contain at least one data row"],
+          cleanedContent: ""
+        };
+      }
+
+      const cleanedLines = lines.map(line => 
+        line.trim()
+          .replace(/\s*,\s*/g, ',')
+          .replace(/,+/g, ',')
+          .replace(/,$/, '')
+          .replace(/\s+/g, ' ')
+      ).filter(line => line !== '');
+
+      const requiredHeaders = [
+        'firstname', 'lastname', 'email', 'phone',
+        'level', 'employee_id', 'government_entity', 'salary_per_month'
+      ];
+      
+      const headers = cleanedLines[0].split(',');
+      const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+      
+      if (missingHeaders.length > 0) {
+        errors.push(`Missing required columns: ${missingHeaders.join(', ')}`);
+      }
+
+      const cleanedRows: string[] = [];
+      for (let i = 1; i < cleanedLines.length; i++) {
+        const values = cleanedLines[i].split(',');
+        
+        if (values.length !== headers.length) {
+          errors.push(`Row ${i + 1}: Expected ${headers.length} columns, found ${values.length}`);
+          continue;
         }
-      );
 
-      toast.success(`${response.data?.count || 'Users'} created successfully!`);
-      setOpen(false);
-      router.refresh();
-    } catch (error: any) {
-      console.error("Error uploading users:", error);
+        const rowData: Record<string, string> = {};
+        headers.forEach((header, index) => {
+          rowData[header] = values[index]?.trim() || '';
+        });
+
+        if (!rowData.employee_id) {
+          errors.push(`Row ${i + 1}: Missing employee_id`);
+        }
+        
+        if (!rowData.email) {
+          errors.push(`Row ${i + 1}: Missing email`);
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rowData.email)) {
+          errors.push(`Row ${i + 1}: Invalid email format`);
+        }
+
+        if (!rowData.salary_per_month) {
+          errors.push(`Row ${i + 1}: Missing salary_per_month`);
+        } else if (isNaN(Number(rowData.salary_per_month.replace(/,/g, '')))) {
+          errors.push(`Row ${i + 1}: Invalid salary value (must be a number)`);
+        }
+
+        if (rowData.salary_per_month) {
+          rowData.salary_per_month = rowData.salary_per_month.replace(/,/g, '');
+        }
+
+        cleanedRows.push(headers.map(header => rowData[header]).join(','));
+      }
+
+      return {
+        isValid: errors.length === 0,
+        errors,
+        cleanedContent: [headers.join(','), ...cleanedRows].join('\n')
+      };
+    };
+
+    const validationResult = validateCSV(csvContent);
+    if (!validationResult.isValid) {
       toast.error(
-        error.response?.data?.message || "Failed to upload users"
+        <div className="max-h-[200px] overflow-y-auto">
+          <p className="font-semibold">CSV validation failed:</p>
+          <ul className="list-disc pl-5 mt-1 space-y-1">
+            {validationResult.errors.map((error, index) => (
+              <li key={index} className="text-sm">{error}</li>
+            ))}
+          </ul>
+        </div>,
+        { duration: 10000 }
       );
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
 
+    const formData = new FormData();
+    const csvBlob = new Blob([validationResult.cleanedContent], { type: "text/csv" });
+    formData.append("file", csvBlob, "users_upload.csv");
+
+    interface ApiError {
+      row?: number;
+      message?: string;
+      errors?: Array<{
+        msg?: string;
+        path?: string;
+      }>;
+    }
+
+    interface ApiResponse {
+      message?: string;
+      success?: any[];
+      failed?: ApiError[];
+      count?: number;
+    }
+
+    const response = await axios.post<ApiResponse>(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/admin/upload-users`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+        timeout: 45000,
+      }
+    );
+
+    if (response.data.failed && response.data.failed.length > 0) {
+      const errorGroups = response.data.failed.reduce((acc: Record<string, string[]>, error) => {
+        const key = error.message || "Unknown error";
+        if (!acc[key]) acc[key] = [];
+        if (error.row) acc[key].push(`Row ${error.row}`);
+        return acc;
+      }, {});
+
+      toast.error(
+        <div className="max-h-[300px] overflow-y-auto">
+          <p className="font-semibold">{response.data.message}</p>
+          <div className="mt-2 space-y-2">
+            {Object.entries(errorGroups).map(([message, rows], i) => (
+              <div key={i}>
+                <p className="text-sm font-medium">{message}</p>
+                <p className="text-xs text-muted-foreground">
+                  Affected rows: {rows.join(", ")}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>,
+        { duration: 15000 }
+      );
+    } else {
+      toast.success(
+        response.data.message || "Users uploaded successfully",
+        { duration: 5000 }
+      );
+    }
+
+    router.refresh();
+    setOpen(false);
+  } catch (error: unknown) {
+    let errorMessage = "Upload failed";
+    let errorDetails = "";
+
+    if (axios.isAxiosError(error)) {
+      console.error("[AXIOS ERROR]", error.response?.data);
+      
+      if (error.response) {
+        errorMessage = error.response.data?.message || error.message;
+        
+        if (typeof error.response.data === 'string') {
+          const serverErrorMatch = error.response.data.match(/<pre>([\s\S]*?)<\/pre>/i);
+          if (serverErrorMatch) {
+            errorDetails = serverErrorMatch[1];
+          }
+        } else if (error.response.data?.errors) {
+          errorDetails = JSON.stringify(error.response.data.errors, null, 2);
+        }
+      } else if (error.code === "ECONNABORTED") {
+        errorMessage = "Request timed out";
+      }
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    toast.error(
+      <div className="max-w-md max-h-[300px] overflow-y-auto">
+        <p className="font-semibold">{errorMessage}</p>
+        {errorDetails && (
+          <pre className="text-xs mt-2 p-2 bg-muted rounded">
+            {errorDetails}
+          </pre>
+        )}
+      </div>,
+      { duration: 10000 }
+    );
+  } finally {
+    setLoading(false);
+  }
+};
   const downloadTemplate = async () => {
     try {
       const response = await axios.get(

@@ -16,58 +16,30 @@ const navLinks = [
   { name: "Contact Us", href: "/contact" },
 ];
 
-function CartPreview() {
-  const { data: clientSession } = useSession();
-  const [serverUser, setServerUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(data => {
-        console.log('Server session:', data);
-        setServerUser(data);
-      })
-      .catch(error => {
-        console.error('Session fetch error:', error);
-      })
-      .finally(() => setIsLoading(false));
-  }, []);
-
-  const user = clientSession?.user || serverUser;
-  console.log('Current user:', user);
-
+function CartPreview({ token }: { token?: string }) {
   const { data: cartResponse, error } = useQuery({
-    queryKey: ['cart', user?.token],
+    queryKey: ['cart', token],
     queryFn: async () => {
-      if (!user?.token) {
-        console.log('No token available');
+      if (!token) {
         return { data: [] };
       }
       
       try {
-        console.log('Fetching cart...');
         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/cart`, {
-          headers: { Authorization: `Bearer ${user.token}` }
+          headers: { Authorization: `Bearer ${token}` }
         });
-        console.log('Cart API response:', res.data);
         return res.data;
       } catch (error) {
         console.error('Cart fetch error:', error);
-        if (axios.isAxiosError(error)) {
-          console.error('Error details:', error.response?.data);
-        }
         return { data: [] };
       }
     },
-    enabled: !!user?.token,
+    enabled: !!token,
     refetchInterval: 5000,
     refetchOnWindowFocus: true
   });
 
-  // Calculate total quantity from the API response structure
   const itemCount = cartResponse?.data?.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0) || 0;
-  console.log('Item count:', itemCount);
 
   return (
     <div className="relative">
@@ -89,18 +61,43 @@ function CartPreview() {
     </div>
   );
 }
- 
- 
+
 const Header = () => {
   const [menu, setMenu] = useState(false);
-  const toggleMenu = () => setMenu(!menu);
-  const closeMenu = () => setMenu(false);
+  const { data: clientSession, status } = useSession();
+  const [serverUser, setServerUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
-  const { status } = useSession();
   const isAuthPage = pathname === "/register" || pathname === "/employee-login";
 
+  const toggleMenu = () => setMenu(!menu);
+  const closeMenu = () => setMenu(false);
+
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(setServerUser)
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  // Close menu when navigating
+  useEffect(() => {
+    const handleRouteChange = () => {
+      if (menu) {
+        closeMenu();
+      }
+    };
+
+    return () => {
+      window.removeEventListener('routeChange', handleRouteChange);
+    };
+  }, [menu]);
+
+const user = clientSession?.user || serverUser;
+
   return (
-    <header className="font-header h-[75px] bg-[#FAF9F6] sticky top-0 text-black font-semibold z-50 w-full">
+    <header className="font-header h-[75px] dark:bg-black bg-[#FAF9F6] sticky top-0 text-black font-semibold z-50 w-full">
       {/* DESKTOP */}
       <div className={`hidden w-full h-full sm:flex justify-between items-center px-2 md:px-4 ${!isAuthPage ? "xl:max-w-full xl:mx-auto" : ""}`}>
         <div className="flex md:pl-6 items-center">
@@ -128,17 +125,20 @@ const Header = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {status === "authenticated" && <CartPreview />}
+          {status === "authenticated" && (
+            <>
+              {user?.role === "user" && <CartPreview token={user?.token} />}
+              <ShowProfile />
+            </>
+          )}
           
-          {status === "unauthenticated" ? (
+          {status === "unauthenticated" && (
             <Button
               asChild
               className="rounded-full bg-[#FAF9F6] hover:bg-green-700 hover:text-white text-[16px] px-12 py-[1.7rem] text-black border-2 border-green-700"
             >
               <Link href="/employee-login">Sign In</Link>
             </Button>
-          ) : (
-            <ShowProfile />
           )}
         </div>
       </div>
@@ -178,25 +178,25 @@ const Header = () => {
               ))}
             </nav>
 
-            <div className="flex items-center gap-4 mt-4">
-              {status === "authenticated" && <CartPreview />}
+            <div className="flex flex-col gap-4 mt-4">
+              {status === "authenticated" && (
+                <>
+                  <CartPreview token={user?.token} />
+                  <ShowProfile />
+                </>
+              )}
             </div>
 
-            {status === "unauthenticated" ? (
-              <div className="flex flex-col gap-4 mt-6">
-               
+            <div className="mt-4">
+              {status === "unauthenticated" && (
                 <Button
                   asChild
                   className="w-full bg-green-700 rounded-full hover:bg-green-600"
                 >
                   <Link href="/employee-login" onClick={closeMenu}>Employee Login</Link>
                 </Button>
-              </div>
-            ) : (
-              <div className="mt-4">
-                <ShowProfile />
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
       </div>

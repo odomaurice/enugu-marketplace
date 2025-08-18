@@ -12,7 +12,7 @@ export default async function AdminUsersPage() {
   }
 
   return (
-    <div className="container py-6">
+    <div className="container py-6 mt-[60px] ">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[18px] font-bold">User Management</h1>
        <div className="flex space-x-2">

@@ -1,50 +1,92 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import AdminChartDialog from '@/components/dashboards/admin/AdminChartDialog';
-import { OrdersChart } from '@/components/dashboards/admin/OrdersChart';
+import UserChartDialog from '@/components/dashboards/users/UsersChartDialog';
+import { OrdersChart } from '@/components/dashboards/users/OrdersChart';
+import axios from 'axios';
+import { LoanStats } from '@/components/dashboards/users/LoanStats'; 
 
 export default async function AdminDashboard() {
   const session = await getServerSession(authOptions);
-
-  console.log(session);
   
-  if (!session?.user) {
-    redirect(`/employee-login?callbackUrl=${encodeURIComponent('/employee-dashboard')}`);
+  if (!session?.user?.token) {
+    redirect('/login');
   }
 
-  if (session.user.role !== 'user') {
-    redirect('/auth/error?error=Unauthorized');
+  // Fetch initial data on server
+  let totalOrders = 0;
+  let initialLoanData = {
+    loan_unit: session?.user?.loan_unit || 0,
+    loan_amount_collected: session?.user?.loan_amount_collected || 0
+  };
+
+  try {
+    // Fetch orders
+    const ordersResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/all-order`, {
+      headers: { 
+        Authorization: `Bearer ${session.user.token}` 
+      }
+    });
+    totalOrders = ordersResponse.data.data?.length || 0;
+
+    // Fetch address data to get fresh loan info
+    const addressResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/address`, {
+      headers: { 
+        Authorization: `Bearer ${session.user.token}` 
+      }
+    });
+    
+    if (addressResponse.data.data?.[1]?.user) {
+      initialLoanData = {
+        loan_unit: addressResponse.data.data[1].user.loan_unit,
+        loan_amount_collected: addressResponse.data.data[1].user.loan_amount_collected
+      };
+    }
+  } catch (error) {
+    console.error('Failed to fetch data:', error);
+    // Fallback to session data if there's an error
+    totalOrders = 0;
   }
+
+  const formatCurrency = (value: number | undefined) => {
+    const numValue = value || 0;
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN'
+    }).format(numValue);
+  };
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold">Welcome, {session.user.name}</h1>
+      <h1 className="text-2xl font-bold">Welcome, {session?.user?.name}</h1>
      
-      
       <div className="mt-8">
-       
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Dashboard cards or components */}
+          {/* Total Orders (Server component) */}
           <div className="bg-white p-6 flex justify-between rounded-lg shadow">
-            <h3 className="font-medium">Total Orders</h3>
-            <p className="text-2xl text-gray-900  font-bold mt-2">13</p>
+            <div>
+              <h3 className="font-medium text-md">Total Orders</h3>
+              <p className="text-xl text-gray-900 font-bold mt-2">{totalOrders}</p>
+            </div>
+            <div className="bg-green-100 p-3 rounded-full flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+            </div>
           </div>
-          <div className="bg-white p-6 flex justify-between rounded-lg shadow">
-            <h3 className="font-medium">Loan Unit</h3>
-            <p className="text-2xl text-gray-900  font-bold mt-2">₦162,000</p>
-          </div>
-           <div className="bg-white p-6 flex justify-between rounded-lg shadow">
-            <h3 className="font-medium">Loan Taken</h3>
-            <p className="text-2xl text-gray-900  font-bold mt-2">₦0</p>
-          </div>
+
+          {/* Loan Stats (Client component with auto-refresh) */}
+          <LoanStats 
+            initialLoanUnit={initialLoanData.loan_unit}
+            initialLoanTaken={initialLoanData.loan_amount_collected}
+            token={session.user.token}
+          />
         </div>
-      </div>
-      <div className='flex my-6 justify-between md:flex-row flex-col gap-4 '>
-        <AdminChartDialog/>
-        <OrdersChart />
+        <div className='my-6 flex md:flex-row flex-col justify-between gap-4'>
+          <UserChartDialog />
+          <OrdersChart />
+        </div>
       </div>
     </div>
   );
 }
-

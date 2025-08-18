@@ -10,7 +10,7 @@ const Footer = () => (
     <div
       className={`flex justify-center items-start md:flex-row flex-col mb-8 w-full`}
     >
-      <div className="flex-[1.5] w-full flex flex-row justify-between flex-wrap md:mt-0 mb-8 mt-10">
+      <div className="flex-[1.5] w-full flex flex-row justify-between flex-wrap md:mt-0 mb-8 px-3 mt-10">
         {footerLinks.map((footerlink) => (
           <div
             key={footerlink.title}

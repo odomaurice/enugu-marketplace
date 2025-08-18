@@ -42,7 +42,7 @@ const Features = () => {
       </h2>
       <div className="grid grid-cols-1   md:grid-cols-3 gap-10">
         {features.map((feature, index) => (
-          <div key={index} className="flex items-start gap-4 bg-green-100 p-4 rounded-md">
+          <div key={index} className="flex items-start gap-4 bg-green-50 p-4 rounded-md">
             <div className=''>
                <div className="shrink-0">{feature.icon}</div>
             </div>

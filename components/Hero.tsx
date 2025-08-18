@@ -5,7 +5,7 @@ import Stats from "./Stats";
 
 export default function Hero() {
   return (
-    <div className="min-h-screen bg-[#FAF9F6] font-header">
+    <div className="min-h-screen dark:bg-black bg-[#FAF9F6] font-header">
       {/* Text Section */}
       <div className="pt-20 px-6 mb-2 text-center mx-auto">
         <h1
@@ -36,11 +36,12 @@ export default function Hero() {
         <div className="grid grid-cols-3 gap-4 h-[500px] md:h-[600px]">
           {/* Left Image (Smallest) */}
           <div className="relative h-full">
-            <div className="absolute -top-2 -left-8 md:block hidden w-[300px] h-[300px] md:w-[250px] md:h-[300px] z-10">
+            <div className="absolute -top-12 -left-8 md:block hidden w-[300px] h-[300px] md:w-[250px] md:h-[300px] z-10">
               <Image
                 src="/hero-7.jpg"
                 alt="Food image 1"
                 fill
+                priority
                 className="object-cover rounded-lg shadow-lg "
                 quality={90}
               />
@@ -49,7 +50,7 @@ export default function Hero() {
 
           {/* Center Image (Largest) */}
           <div className="md:relative w-full h-full">
-            <div className="md:absolute md:top-12 md:left-[46%] md:transform md:-translate-x-1/2 w-[100%] h-[400px] md:w-[700px] md:h-[400px] z-20">
+            <div className="md:absolute md:-top-4 md:left-[46%] md:transform md:-translate-x-1/2 w-[100%] h-[300px] md:w-[700px] md:h-[400px] z-20">
               <Image
                 src="/hero-1.jpg"
                 alt="Food image 2"
@@ -68,6 +69,7 @@ export default function Hero() {
                 src="/hero-9.jpg"
                 alt="Food image 3"
                 fill
+                priority
                 className="object-cover rounded-lg shadow-lg "
                 quality={90}
               />

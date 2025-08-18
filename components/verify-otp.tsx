@@ -126,7 +126,7 @@ export default function VerifyOtp() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            <Button type="submit" className="w-full bg-green-700" disabled={isSubmitting}>
               {isSubmitting ? "Verifying..." : "Verify OTP"}
             </Button>
           </form>
