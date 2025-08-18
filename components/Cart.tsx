@@ -38,26 +38,21 @@ interface CartItem {
   } | null;
 }
 
-type SessionObj = { user?: { token?: string; [k: string]: unknown } } | null;
+
 
 const CartPage = () => {
   const { data: clientSession } = useSession();
-  const [serverUser, setServerUser] = useState<SessionObj>(null);
+  const [serverUser, setServerUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then((data: SessionObj) => {
-        setServerUser(data);
-        setIsLoading(false);
-      })
-      .catch(err => {
-        console.error("Session error:", err);
-        setIsLoading(false);
-      });
-  }, []);
+      fetch('/api/auth/session')
+        .then(res => res.json())
+        .then(setServerUser)
+        .catch(console.error)
+        .finally(() => setIsLoading(false));
+    }, []);
 
   const user = clientSession?.user || serverUser;
   // Safely extract token from both possible types
@@ -428,8 +423,7 @@ const CartPage = () => {
                       style: "currency",
                       currency: "NGN",
                     }).format(totalPrice)}
-                  </span>
-                </div>
+                  </span> </div>
               </CardContent>
               <CardFooter>
                 <Button 

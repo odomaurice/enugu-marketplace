@@ -45,7 +45,7 @@ const FAQ = () => {
         </AccordionItem>
 
         <AccordionItem value="item-3">
-          <AccordionTrigger>
+          <AccordionTrigger className="text-start">
             Is there a limit to how much I can spend?
           </AccordionTrigger>
           <AccordionContent className=" text-[15px]">
@@ -58,7 +58,7 @@ const FAQ = () => {
         </AccordionItem>
 
         <AccordionItem value="item-4">
-          <AccordionTrigger>How quickly will I receive my order?</AccordionTrigger>
+          <AccordionTrigger className="text-start">How quickly will I receive my order?</AccordionTrigger>
           <AccordionContent className=" text-[15px]">
             Delivery times vary by location:<br/><br/>
             • Abuja/Lagos: Within 24 hours<br/>
@@ -69,7 +69,7 @@ const FAQ = () => {
         </AccordionItem>
 
         <AccordionItem value="item-5">
-          <AccordionTrigger>
+          <AccordionTrigger className="text-start">
             What if there's an issue with my order?
           </AccordionTrigger>
           <AccordionContent className=" text-[15px]">
@@ -82,7 +82,7 @@ const FAQ = () => {
         </AccordionItem>
 
         <AccordionItem value="item-6">
-          <AccordionTrigger>Can I use this service if I'm a contract staff?</AccordionTrigger>
+          <AccordionTrigger className="text-start">Can I use this service if I'm a contract staff?</AccordionTrigger>
           <AccordionContent className=" text-[15px]">
             Currently, this service is available to:<br/><br/>
             ✅ Permanent civil servants<br/>
@@ -93,7 +93,7 @@ const FAQ = () => {
         </AccordionItem>
 
         <AccordionItem value="item-7">
-          <AccordionTrigger>
+          <AccordionTrigger className="text-start">
             How do I update my delivery address or contact info?
           </AccordionTrigger>
           <AccordionContent className=" text-[15px]">
@@ -106,7 +106,7 @@ const FAQ = () => {
         </AccordionItem>
 
         <AccordionItem value="item-8">
-          <AccordionTrigger>What makes this service different from regular stores?</AccordionTrigger>
+          <AccordionTrigger className="text-start">What makes this service different from regular stores?</AccordionTrigger>
           <AccordionContent className=" text-[15px]">
             Our government-backed service offers unique advantages:<br/><br/>
             🛡️ <strong>Security</strong>: Verified through your official staff credentials<br/>

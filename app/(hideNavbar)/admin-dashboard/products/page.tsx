@@ -13,7 +13,7 @@ export default async function AdminProductsPage() {
   }
 
   return (
-    <div className="container py-6">
+    <div className="container py-6 mt-[60px]">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Product Management</h1>
         <CreateProductDialog token={session.user.token}  />

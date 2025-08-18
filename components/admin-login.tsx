@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { Eye, EyeOff } from "lucide-react";
 
 const formSchema = z.object({
   identifier: z.string().email("Invalid email address"),
@@ -19,6 +20,7 @@ export default function AdminLogin() {
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
   const callbackUrl = searchParams.get('callbackUrl') || '/admin-dashboard';
 
@@ -57,11 +59,17 @@ export default function AdminLogin() {
     }
   }
 
+  
+    const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
     <div className="min-h-screen flex font-header items-center justify-center bg-gray-50">
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow">
         <div className="text-center">
           <h1 className="text-2xl font-bold">Admin Login</h1>
+           <h3 className="text-[16px] my-4">Login to your admin account</h3>
         </div>
 
         {error && (
@@ -97,11 +105,24 @@ export default function AdminLogin() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
+                     <div className="relative">
                     <Input 
-                      type="password" 
+                      type={showPassword ? "text" : "password"} 
                       placeholder="••••••••" 
                       {...field} 
                     />
+                    <button
+                      type="button"
+                      onClick={togglePasswordVisibility}
+                      className="absolute top-2 right-4 border-none bg-transparent cursor-pointer"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="text-orange-700 h-4 w-4" />
+                      ) : (
+                        <Eye className="text-orange-700 h-4 w-4" />
+                      )}
+                    </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -110,10 +131,10 @@ export default function AdminLogin() {
 
             <Button 
               type="submit" 
-              className="w-full" 
+              className="w-full bg-green-700 hover:bg-green-600" 
               disabled={isLoading}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? 'Logging in...' : 'Log In'}
             </Button>
           </form>
         </Form>

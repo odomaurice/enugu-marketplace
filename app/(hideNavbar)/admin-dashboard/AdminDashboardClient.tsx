@@ -15,14 +15,14 @@ export default function AdminLayoutClient({
   session: Session;
 }) {
   return (
-    <div className="flex font-header">
+    <div className="flex font-header ">
       {/* Desktop Sidebar */}
-      <div className="hidden sm:block sm:flex-4 md:flex-2 bg-[#FFF] text-black font-semibold py-2 h-screen sticky top-0 overflow-auto scrollbar-hide">
-        <Sidebar dashboard="admin" session={session} />
+      <div className="hidden sm:block sm:flex-4 md:flex-2  text-black font-semibold py-2 h-screen sticky top-0 overflow-auto scrollbar-hide">
+        <Sidebar dashboard="admin"  />
       </div>
 
       {/* Main Content */}
-      <section className="flex-1 flex flex-col w-full overflow-hidden">
+      <section className="flex-1 flex flex-col w-full  overflow-hidden">
         {/* Mobile Sidebar */}
         <div className="sm:hidden">
           <MobileSidebar dashboard="admin" session={session}  />

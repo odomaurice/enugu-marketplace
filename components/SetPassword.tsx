@@ -8,6 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { Eye, EyeOff } from "lucide-react";
 
 const formSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
@@ -22,6 +23,7 @@ export default function SetPassword() {
   const searchParams = useSearchParams();
   const userId = searchParams.get('userId');
   const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState<boolean>(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -72,8 +74,12 @@ export default function SetPassword() {
     }
   }
 
+   const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center font-header justify-center bg-gray-50">
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow">
         <h1 className="text-2xl font-bold text-center">Set Your Password</h1>
         <Form {...form}>
@@ -85,7 +91,21 @@ export default function SetPassword() {
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Enter password" {...field} />
+                    <div className="relative">
+                      <Input  type={showPassword ? "text" : "password"} placeholder="Enter password" {...field} />
+
+                      <button
+                      type="button"
+                      onClick={togglePasswordVisibility}
+                      className="absolute top-2 right-4 border-none bg-transparent cursor-pointer"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="text-orange-700 h-4 w-4" />
+                      ) : (
+                        <Eye className="text-orange-700 h-4 w-4" />
+                      )}
+                    </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -98,13 +118,26 @@ export default function SetPassword() {
                 <FormItem>
                   <FormLabel>Confirm Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder="Confirm password" {...field} />
+                     <div className="relative">
+                    <Input  type={showPassword ? "text" : "password"} placeholder="Confirm password" {...field} />
+                    <button
+                      type="button"
+                      onClick={togglePasswordVisibility}
+                      className="absolute top-2 right-4 border-none bg-transparent cursor-pointer"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="text-orange-700 h-4 w-4" />
+                      ) : (
+                        <Eye className="text-orange-700 h-4 w-4" />
+                      )}
+                    </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            <Button type="submit" className="w-full bg-green-700 hover:bg-green-600" disabled={isSubmitting}>
               {isSubmitting ? "Processing..." : "Continue"}
             </Button>
           </form>

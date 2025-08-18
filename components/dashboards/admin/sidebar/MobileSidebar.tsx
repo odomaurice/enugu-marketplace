@@ -19,7 +19,7 @@ const MobileSideBar = ({ dashboard, session }: { dashboard: string; session: Ses
         }}
         className="  w-3/5 bg-green-700 h-full  font-bold p-3 overflow-auto"
       >
-        <Sidebar dashboard={dashboard} session={session} />
+        <Sidebar dashboard={dashboard}  />
       </div>
     </div>
   );

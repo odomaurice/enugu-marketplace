@@ -19,7 +19,7 @@ const MobileSideBar = ({ dashboard, session }: { dashboard: string; session: Ses
         }}
         className="  w-3/5 bg-white h-full  font-bold px-3 text-black overflow-auto scrollbar-hide"
       >
-        <Sidebar dashboard={dashboard} session={session} />
+        <Sidebar dashboard={dashboard}  />
       </div>
     </div>
   );

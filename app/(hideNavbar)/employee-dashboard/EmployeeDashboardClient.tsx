@@ -1,14 +1,11 @@
 "use client";
 import { Session } from "next-auth";
-// import Sidebar from "@/components/dashboards/admin/sidebar/Sidebar";
-// import MobileSidebar from "@/components/dashboards/admin/sidebar/MobileSidebar";
-// import Navbar from "@/components/dashboards/admin/navbar/Navbar"
 import ConfirmLogout from "@/components/ConfirmLogout";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Sidebar from "@/components/dashboards/users/sidebar/Sidebar";
 import MobileSideBar from "@/components/dashboards/users/sidebar/MobileSidebar";
 import MobileNavbar from "@/components/dashboards/users/navbar/MobileNavbar";
+import Sidebar from "@/components/dashboards/users/sidebar/Sidebar";
 
 export default function EmployeeLayoutClient({
   children,
@@ -21,7 +18,8 @@ export default function EmployeeLayoutClient({
     <div className="flex font-header">
       {/* Desktop Sidebar */}
       <div className="hidden sm:block sm:flex-4 md:flex-2 bg-[#FFF] text-black font-semibold py-2 h-screen sticky top-0 overflow-auto scrollbar-hide">
-        <Sidebar dashboard="user" session={session} />
+        <Sidebar dashboard="user"  />
+        
       </div>
 
       {/* Main Content */}
