@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { CategoriesList } from '@/components/dashboards/admin/categories/CategoriesList';
 import { CreateCategoryDialog } from '@/components/dashboards/admin/categories/CreateCategoryDialog';
+import { Suspense } from 'react';
 
 export default async function AdminCategoriesPage() {
   const session = await getServerSession(authOptions);
@@ -12,6 +13,7 @@ export default async function AdminCategoriesPage() {
   }
 
   return (
+     <Suspense fallback={<div>Loading...</div>}>
     <div className="container py-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Categories Management</h1>
@@ -19,5 +21,6 @@ export default async function AdminCategoriesPage() {
       </div>
       <CategoriesList token={session.user.token} />
     </div>
+    </Suspense>
   );
 }

@@ -163,7 +163,7 @@ export function ProductDetails({ productId, token }: ProductDetailsProps) {
         </Card>
 
         {/* Variants */}
-        <Card className="lg:col-span-2">
+        {/* <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Product Variants</CardTitle>
           </CardHeader>
@@ -212,7 +212,7 @@ export function ProductDetails({ productId, token }: ProductDetailsProps) {
               ))}
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   );

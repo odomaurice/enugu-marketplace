@@ -27,13 +27,13 @@ const features = [
 
 const Features = () => {
   return (
-    <section className="py-8 font-header bg-green-50  px-4 mt-20 mb-6  md:px-16">
+    <section className="py-12 font-header bg-green-50  px-4 mt-20  h-full  md:px-16">
       <h2 className="text-xl md:text-3xl font-bold text-center pt-10 mt-4 mb-16 text-black">
         Transformative Benefits for Enugu State
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
         {features.map((feature, index) => (
-          <div key={index} className="flex flex-col w-[300px] h-full  bg-green-50 p-3  rounded-md">
+          <div key={index} className="flex flex-col w-[300px] h-full  bg-green-50   rounded-md">
             <div className='flex flex-col space-y-4 bg-white p-6 h-full rounded-lg shadow-md'>
               <div className="shrink-0 flex justify-start">{feature.icon}</div>
               <h3 className="text-[16px] font-bold font-header text-gray-900 text-start">

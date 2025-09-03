@@ -12,7 +12,7 @@ import axios from "axios";
 import { LuBuilding } from "react-icons/lu";
 
 const navLinks = [
-  { name: "Home", href: "/" },
+  // { name: "Home", href: "/" },
       { name: "Products", href: "/products" },
   { name: "Executive Summary", href: "/executive-summary" },
   { name: "Benefits", href: "/benefits" },
@@ -107,7 +107,7 @@ const user = clientSession?.user || serverUser;
           <Link href="/" className="flex items-center">
           <LuBuilding className="text-3xl text-green-600" />
             <h1 className="font-poppins ml-2 font-bold text-[18px]">
-              Enugu Food Loan
+              Enugu Food Scheme
             </h1>
           </Link>
         </div>

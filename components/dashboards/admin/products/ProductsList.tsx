@@ -110,9 +110,9 @@ export function ProductsList({ token }: { token: string }) {
         <div>Error: {(error as Error).message}</div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {products.map((product) => (
-              <Card key={product.id} className="hover:shadow-lg transition-shadow w-[320px]">
+              <Card key={product.id} className="hover:shadow-lg transition-shadow w-[400px]">
                 <CardHeader className="p-0">
                   <div className="relative h-48 w-full">
                     <Image
@@ -138,7 +138,7 @@ export function ProductsList({ token }: { token: string }) {
                       }).format(product.basePrice)}
                     </span>
                   </div>
-                  {product.variants.length > 0 && (
+                  {/* {product.variants.length > 0 && (
                     <div className="mt-3">
                       <h4 className="text-sm font-medium">Variants:</h4>
                       <div className="flex flex-wrap gap-2 mt-1">
@@ -152,7 +152,7 @@ export function ProductsList({ token }: { token: string }) {
                         ))}
                       </div>
                     </div>
-                  )}
+                  )} */}
                 </CardContent>
                 <CardFooter className="">
                     

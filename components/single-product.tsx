@@ -73,6 +73,10 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
       toast.error('Only employees can add products to cart');
       return;
     }
+    // if (user.status === 'PENDING') {
+    //   toast.error('');
+    //   return;
+    // }
 
     // Create payload with productId only (no variantId)
     const payload = { productId: params.id, quantity };

@@ -138,21 +138,21 @@ export default async function AdminDashboard() {
         {/* Second row of cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
           {/* Active Users */}
-          {/* <div className="bg-white p-6 rounded-lg shadow">
+          <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="font-medium text-gray-500">Active Users</h3>
             <p className="text-2xl font-bold mt-2">{activeUsers}</p>
             <p className="text-sm text-gray-500 mt-1">{Math.round((activeUsers / totalUsers) * 100)}% of total users</p>
-          </div> */}
+          </div> 
 
           {/* Pending Orders */}
-          {/* <div className="bg-white p-6 rounded-lg shadow">
+          <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="font-medium text-gray-500">Pending Orders</h3>
             <p className="text-2xl font-bold mt-2">{pendingOrders}</p>
             <p className="text-sm text-gray-500 mt-1">{Math.round((pendingOrders / totalOrders) * 100)}% of total orders</p>
-          </div> */}
+          </div>
 
           {/* Top Products */}
-          {/* <div className="bg-white p-6 rounded-lg shadow">
+           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="font-medium text-gray-500">Top Products</h3>
             <ul className="mt-2 space-y-1">
               {topProducts.map((product, index) => (
@@ -162,7 +162,7 @@ export default async function AdminDashboard() {
                 </li>
               ))}
             </ul>
-          </div> */}
+          </div>
         </div>
       </div>
 
