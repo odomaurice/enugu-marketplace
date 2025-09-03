@@ -53,12 +53,13 @@ export const authOptions: NextAuthOptions = {
 
           return {
             ...data.admin,
-            ...tokenPayload.admin, // Note: using admin instead of user
+            ...tokenPayload.admin,
             id: data.admin?.id?.toString(),
             userId: data.admin?.id?.toString(),
             name: `${data.admin?.firstname} ${data.admin?.lastname}`.trim(),
             token: data.token,
-            role: "admin"
+            role: "admin",
+            status: data.admin?.status || "ACTIVE" // Default to ACTIVE for admins
           };
         } catch (error: any) {
           throw new Error(error.message || 'Authentication failed');
@@ -106,6 +107,7 @@ export const authOptions: NextAuthOptions = {
             name: `${data.user?.firstname} ${data.user?.lastname}`.trim(),
             token: data.token,
             role: "user",
+            status: data.user?.status || "PENDING", // Include status
             loan_unit: tokenPayload.user?.loan_unit ?? 0,
             loan_amount_collected: tokenPayload.user?.loan_amount_collected ?? 0,
             salary_per_month: tokenPayload.user?.salary_per_month ?? 0,
@@ -141,7 +143,8 @@ export const authOptions: NextAuthOptions = {
             ...user,
             ...(tokenPayload.admin || {}),
             // Admin-specific fields
-            role: "admin"
+            role: "admin",
+            status: user.status || "ACTIVE"
           };
         } else {
           return {
@@ -153,6 +156,7 @@ export const authOptions: NextAuthOptions = {
             loan_amount_collected: user.loan_amount_collected ?? tokenPayload.user?.loan_amount_collected ?? 0,
             salary_per_month: user.salary_per_month ?? tokenPayload.user?.salary_per_month ?? 0,
             government_entity: user.government_entity ?? tokenPayload.user?.government_entity ?? '',
+            status: user.status || "PENDING", // Include status
             role: "user"
           };
         }
@@ -184,7 +188,8 @@ export const authOptions: NextAuthOptions = {
           name: token.name as string,
           email: token.email as string,
           role: token.role as string,
-          token: token.token as string
+          token: token.token as string,
+          status: token.status as string || "ACTIVE"
         };
       } else {
         session.user = {
@@ -196,6 +201,7 @@ export const authOptions: NextAuthOptions = {
           loan_amount_collected: Number(token.loan_amount_collected ?? tokenPayload.user?.loan_amount_collected ?? 0),
           salary_per_month: Number(token.salary_per_month ?? tokenPayload.user?.salary_per_month ?? 0),
           government_entity: token.government_entity ?? tokenPayload.user?.government_entity ?? '',
+          status: token.status as string || "PENDING", // Include status
           // Core fields
           id: token.id as string,
           name: token.name as string,

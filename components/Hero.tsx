@@ -5,10 +5,10 @@ import { IoArrowForwardSharp } from "react-icons/io5";
 
 export default function Hero() {
   return (
-    <div className="min-h-screen dark:bg-black bg-green-50 font-header">
+    <div className="min-h-screen  dark:bg-black bg-green-50 font-header">
       {/* Text Section */}
       <div className="pt-4 px-6 mb-2 text-center mx-auto">
-        <div className="my-3 text-[13px] max-w-[300px] mx-auto bg-green-100 text-green-800 py-1 rounded-full  text-center mb-4">
+        <div className="my-8 text-[13px] max-w-[300px] mx-auto bg-green-100 text-green-800 py-1 rounded-full  text-center mb-4">
           Strategic Initiative for Enugu State
         </div>
         <h1

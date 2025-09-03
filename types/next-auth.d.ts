@@ -9,6 +9,7 @@ declare module "next-auth" {
     email: string;
     role: string;
     token: string;
+    status?: string; // Add status field
     
     // Employee-specific fields (optional)
     phone?: string;
@@ -45,6 +46,7 @@ declare module "next-auth/jwt" {
     email: string;
     role: string;
     token: string;
+    status?: string; // Add status field
     
     // Employee-specific fields
     phone?: string;

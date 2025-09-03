@@ -19,7 +19,7 @@ export const AdminSideBar: AdminSideBarType[] = [
     { path: "", name: "Dashboard", icon: RiHome5Line },
     { path: "users", name: "Users", icon: LuUsers },
     { path: "products", name: "Products", icon: MdOutlineProductionQuantityLimits },
-     { path: "product-variants", name: "Product-variants", icon: BsCart4 },
+    //  { path: "product-variants", name: "Product-variants", icon: BsCart4 },
     { path: "orders", name: "Orders", icon: FiShoppingBag  },
     { path: "inventory", name: "Inventory", icon: MdOutlineInventory2 },
     { path: "warehouse", name: "Warehouse", icon: PiWarehouse },

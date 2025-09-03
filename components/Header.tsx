@@ -12,7 +12,7 @@ import axios from "axios";
 import { LuBuilding } from "react-icons/lu";
 
 const navLinks = [
-  { name: "Home", href: "/" },
+  // { name: "Home", href: "/" },
       { name: "Products", href: "/products" },
   { name: "Executive Summary", href: "/executive-summary" },
   { name: "Benefits", href: "/benefits" },
