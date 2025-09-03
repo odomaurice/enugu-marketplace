@@ -28,7 +28,11 @@ export default {
 		center: true,
 		padding: "2rem",
 	  },
+	  
   	extend: {
+		backgroundImage: {
+        'gradient-to-r': 'linear-gradient(to right, var(--tw-gradient-stops))',
+      },
   		colors: {
   			background: 'hsl(var(--background))',
   			foreground: 'hsl(var(--foreground))',

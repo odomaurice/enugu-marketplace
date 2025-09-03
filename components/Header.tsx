@@ -9,11 +9,14 @@ import ShowProfile from "./ShowProfile";
 import { HiOutlineMenuAlt4 } from "react-icons/hi";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import { LuBuilding } from "react-icons/lu";
 
 const navLinks = [
-  { name: "About Us", href: "/about" },
-  { name: "Products", href: "/products" },
-  { name: "Contact Us", href: "/contact" },
+  { name: "Home", href: "/" },
+      { name: "Products", href: "/products" },
+  { name: "Executive Summary", href: "/executive-summary" },
+  { name: "Benefits", href: "/benefits" },
+    { name: "Implementation", href: "/benefits" },
 ];
 
 function CartPreview({ token }: { token?: string }) {
@@ -102,29 +105,28 @@ const user = clientSession?.user || serverUser;
       <div className={`hidden w-full h-full sm:flex justify-between items-center px-2 md:px-4 ${!isAuthPage ? "xl:max-w-full xl:mx-auto" : ""}`}>
         <div className="flex md:pl-6 items-center">
           <Link href="/" className="flex items-center">
+          <LuBuilding className="text-3xl text-green-600" />
             <h1 className="font-poppins ml-2 font-bold text-[18px]">
-              ENUGU MARKETPLACE
+              Enugu Food Loan
             </h1>
           </Link>
         </div>
 
-        <div className="flex items-center h-full">
-          <nav className="flex gap-8 font-header xl:gap-[50px] sm:text-[14px] md:text-[14px]">
+        <div className="flex items-center gap-6 space-x-3 h-full">
+          <nav className="flex gap-8 font-header xl:gap-[50px] sm:text-[13px] md:text-[13px]">
             {navLinks.map((link) => (
               <Link
                 href={link.href}
                 key={link.name}
                 className={pathname.startsWith(link.href) 
-                  ? "font-bold border-green-800 border-b-2" 
-                  : "font-semibold hover:text-gray-600"}
+                  ? "font-bold text-green-700" 
+                  : "font-normal hover:text-gray-600"}
               >
                 {link.name}
               </Link>
             ))}
           </nav>
-        </div>
-
-        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4">
           {status === "authenticated" && (
             <>
               {user?.role === "user" && <CartPreview token={user?.token} />}
@@ -135,12 +137,15 @@ const user = clientSession?.user || serverUser;
           {status === "unauthenticated" && (
             <Button
               asChild
-              className="rounded-full bg-[#FAF9F6] hover:bg-green-700 hover:text-white text-[16px] px-12 py-[1.7rem] text-black border-2 border-green-700"
+              className="rounded-md bg-green-700 hover:bg-green-700 hover:text-white text-[14px] px-6 py-2 text-white border-2 border-green-700"
             >
-              <Link href="/employee-login">Sign In</Link>
+              <Link href="/employee-login">Login</Link>
             </Button>
           )}
         </div>
+        </div>
+
+        
       </div>
 
       {/* MOBILE */}

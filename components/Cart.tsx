@@ -15,8 +15,7 @@ import { Heart, HeartOff, Loader2 } from "lucide-react";
 interface CartItem {
   id: string;
   userId: string;
-  productId: string | null;
-  variantId: string | null;
+  productId: string;
   quantity: number;
   isInWishlist?: boolean;
   product: {
@@ -25,20 +24,9 @@ interface CartItem {
     product_image: string;
     basePrice: number;
     currency: string;
-  } | null;
-  variant: {
-    id: string;
-    name: string;
-    price: number;
-    image: string;
-    product: {
-      id: string;
-      name: string;
-    };
-  } | null;
+    isPerishable: boolean;
+  };
 }
-
-
 
 const CartPage = () => {
   const { data: clientSession } = useSession();
@@ -55,13 +43,11 @@ const CartPage = () => {
     }, []);
 
   const user = clientSession?.user || serverUser;
-  // Safely extract token from both possible types
-  const token =
-    typeof user === "object" && user !== null
-      ? "token" in user
-        ? (user as any).token ?? ""
-        : (user as any).user?.token ?? ""
-      : "";
+  const token = typeof user === "object" && user !== null
+    ? "token" in user
+      ? (user as any).token ?? ""
+      : (user as any).user?.token ?? ""
+    : "";
   const headers = { Authorization: `Bearer ${token}` };
 
   const { data: cartItems } = useQuery({
@@ -76,8 +62,7 @@ const CartPage = () => {
         return cartRes.data.data.map((item: CartItem) => ({
           ...item,
           isInWishlist: wishlistRes.data.data.some((w: any) => 
-            (w.productId === item.productId && w.variantId === item.variantId) ||
-            (w.productId === item.productId && !w.variantId && !item.variantId)
+            w.productId === item.productId
           )
         }));
       } catch (error) {
@@ -102,8 +87,7 @@ const CartPage = () => {
         );
         
         const wishlistItem = wishlistRes.data.data.find((w: any) => 
-          (w.productId === item.productId && w.variantId === item.variantId) ||
-          (w.productId === item.productId && !w.variantId && !item.variantId)
+          w.productId === item.productId
         );
         
         if (!wishlistItem) {
@@ -120,7 +104,7 @@ const CartPage = () => {
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/wishlist/add-to-wishlist`,
           {
             productId: item.productId,
-            variantId: item.variantId
+            variantId: null
           },
           { headers }
         );
@@ -240,19 +224,15 @@ const CartPage = () => {
   };
 
   const getItemPrice = (item: CartItem) => {
-    return item.variant?.price || item.product?.basePrice || 0;
+    return item.product.basePrice || 0;
   };
 
   const getItemImage = (item: CartItem) => {
-    return item.variant?.image || item.product?.product_image || "/placeholder-product.jpg";
+    return item.product.product_image || "/placeholder-product.jpg";
   };
 
   const getItemName = (item: CartItem) => {
-    return item.variant?.product?.name || item.product?.name || "Unknown Product";
-  };
-
-  const getVariantName = (item: CartItem) => {
-    return item.variant?.name || "";
+    return item.product.name || "Unknown Product";
   };
 
   const getItemTotalPrice = (item: CartItem) => {
@@ -298,13 +278,17 @@ const CartPage = () => {
                   <div className="flex-1 p-4 flex flex-col">
                     <div className="flex-1">
                       <h3 className="font-semibold">{getItemName(item)}</h3>
-                      {getVariantName(item) && (
-                        <p className="text-sm text-gray-600">{getVariantName(item)}</p>
-                      )}
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        item.product.isPerishable
+                          ? "bg-green-100 text-green-800"
+                          : "bg-blue-100 text-blue-800"
+                      }`}>
+                        {item.product.isPerishable ? "Perishable" : "Non-Perishable"}
+                      </span>
                       <p className="font-medium mt-2">
                         {new Intl.NumberFormat("en-NG", {
                           style: "currency",
-                          currency: "NGN",
+                          currency: item.product.currency || "NGN",
                         }).format(getItemPrice(item))}
                       </p>
                     </div>
@@ -378,7 +362,7 @@ const CartPage = () => {
                       <p className="font-medium">
                         {new Intl.NumberFormat("en-NG", {
                           style: "currency",
-                          currency: "NGN",
+                          currency: item.product.currency || "NGN",
                         }).format(getItemTotalPrice(item))}
                       </p>
                     </div>

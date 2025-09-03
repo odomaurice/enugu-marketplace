@@ -14,6 +14,7 @@ interface Product {
   product_image: string;
   basePrice: number;
   currency: string;
+  isPerishable: boolean;
 }
 
 const ProductInstance = () => {
@@ -67,20 +68,31 @@ const ProductInstance = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-4">
-                  <h3 className="font-semibold text-lg">{product.name}</h3>
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-semibold text-lg">{product.name}</h3>
+                    <span
+                      className={`text-xs px-2 py-1 rounded ${
+                        product.isPerishable
+                          ? "bg-green-100 text-green-800"
+                          : "bg-blue-100 text-blue-800"
+                      }`}
+                    >
+                      {product.isPerishable ? "Perishable" : "Non-Perishable"}
+                    </span>
+                  </div>
                   <p className="text-sm text-gray-600 line-clamp-2 mt-1">
                     {product.description}
                   </p>
                   <div className="mt-3">
                     <span className="font-medium">
-                      From {new Intl.NumberFormat('en-NG', {
+                      {new Intl.NumberFormat('en-NG', {
                         style: 'currency',
                         currency: product.currency,
                       }).format(product.basePrice)}
                     </span>
                   </div>
                   <Button asChild className="w-full mt-4 bg-orange-700 hover:bg-orange-600">
-                    <Link href={`/products/${product.id}`}>View Product Variants</Link>
+                    <Link href={`/products/${product.id}`}>View Product Details</Link>
                   </Button>
                 </CardContent>
               </Card>

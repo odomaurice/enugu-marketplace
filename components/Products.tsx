@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useInView } from "react-intersection-observer";
@@ -30,9 +30,7 @@ interface Product {
   basePrice: number;
   currency: string;
   isPerishable: boolean;
-  variants: {
-    price: number;
-  }[];
+  variants: any[]; // Keep variants in interface but ignore them in UI
 }
 
 export default function ProductsPage() {
@@ -44,7 +42,6 @@ export default function ProductsPage() {
   const [sortOption, setSortOption] = useState<string>("name-asc");
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
   const [wishlistItems, setWishlistItems] = useState<string[]>([]);
-  //const [isInWishlist, setIsInWishlist] = useState(false);
   const { ref, inView } = useInView();
   const router = useRouter();
 
@@ -105,9 +102,7 @@ export default function ProductsPage() {
             `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/wishlist`,
             { headers: { Authorization: `Bearer ${user.token}` } }
           );
-          const items = res.data.data.map(
-            (item: any) => item.productId || item.variantId
-          );
+          const items = res.data.data.map((item: any) => item.productId);
           setWishlistItems(items);
         } catch (error) {
           console.error("Failed to fetch wishlist", error);
@@ -134,21 +129,18 @@ export default function ProductsPage() {
       );
     }
 
-    // Apply search
+    // Apply search - only search product fields, not variants
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
         (product) =>
           product.name.toLowerCase().includes(query) ||
           product.description.toLowerCase().includes(query) ||
-          product.variants.some(
-            (variant: { price: { toString: () => string | string[] } }) =>
-              variant.price.toString().includes(query)
-          )
+          product.basePrice.toString().includes(query)
       );
     }
 
-    // Apply sorting
+    // Apply sorting - only use product basePrice, not variant prices
     switch (sortOption) {
       case "name-asc":
         result.sort((a, b) => a.name.localeCompare(b.name));
@@ -157,26 +149,10 @@ export default function ProductsPage() {
         result.sort((a, b) => b.name.localeCompare(a.name));
         break;
       case "price-asc":
-        result.sort((a, b) => {
-          const aPrice = Math.min(
-            ...a.variants.map((v: { price: any }) => v.price)
-          );
-          const bPrice = Math.min(
-            ...b.variants.map((v: { price: any }) => v.price)
-          );
-          return aPrice - bPrice;
-        });
+        result.sort((a, b) => a.basePrice - b.basePrice);
         break;
       case "price-desc":
-        result.sort((a, b) => {
-          const aPrice = Math.min(
-            ...a.variants.map((v: { price: any }) => v.price)
-          );
-          const bPrice = Math.min(
-            ...b.variants.map((v: { price: any }) => v.price)
-          );
-          return bPrice - aPrice;
-        });
+        result.sort((a, b) => b.basePrice - a.basePrice);
         break;
       default:
         break;
@@ -184,7 +160,8 @@ export default function ProductsPage() {
 
     return result;
   }, [allProducts, perishableFilter, searchQuery, sortOption]);
-  const toggleWishlist = async (productId: string, variantId?: string) => {
+
+  const toggleWishlist = async (productId: string) => {
     if (!user?.token) {
       toast.error("Please login to manage your wishlist");
       router.push(
@@ -197,12 +174,11 @@ export default function ProductsPage() {
 
     try {
       setIsWishlistLoading(true);
-      const itemId = variantId || productId;
-      const isCurrentlyInWishlist = wishlistItems.includes(itemId);
+      const isCurrentlyInWishlist = wishlistItems.includes(productId);
 
       const payload = {
         productId: isCurrentlyInWishlist ? null : productId,
-        variantId: isCurrentlyInWishlist ? null : variantId || null,
+        variantId: null, // Always null since we're focusing on products
       };
 
       if (isCurrentlyInWishlist) {
@@ -212,8 +188,7 @@ export default function ProductsPage() {
           { headers: { Authorization: `Bearer ${user.token}` } }
         );
         const itemToRemove = wishlistRes.data.data.find(
-          (item: any) =>
-            item.productId === productId || item.variantId === variantId
+          (item: any) => item.productId === productId
         );
 
         if (itemToRemove) {
@@ -233,8 +208,8 @@ export default function ProductsPage() {
       // Update local state
       setWishlistItems((prev) =>
         isCurrentlyInWishlist
-          ? prev.filter((id) => id !== itemId)
-          : [...prev, itemId]
+          ? prev.filter((id) => id !== productId)
+          : [...prev, productId]
       );
 
       toast.success(
@@ -253,7 +228,7 @@ export default function ProductsPage() {
 
       <div className="flex flex-col sm:flex-row gap-4 mb-8">
         <Input
-          placeholder="Search by product name, description..."
+          placeholder="Search by product name, description, or price..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full sm:w-64"
@@ -347,13 +322,10 @@ export default function ProductsPage() {
                     </p>
                     <div className="mt-3">
                       <span className="font-medium">
-                        From{" "}
                         {new Intl.NumberFormat("en-NG", {
                           style: "currency",
                           currency: product.currency,
-                        }).format(
-                          Math.min(...product.variants.map((v) => v.price))
-                        )}
+                        }).format(product.basePrice)}
                       </span>
                     </div>
                     <Button
@@ -361,7 +333,7 @@ export default function ProductsPage() {
                       className="w-full mt-4 bg-orange-700 hover:bg-orange-600"
                     >
                       <Link href={`/products/${product.id}`}>
-                        View Product Variants
+                        View Product Details
                       </Link>
                     </Button>
                     <Button

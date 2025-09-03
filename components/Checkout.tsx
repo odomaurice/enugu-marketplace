@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
@@ -38,8 +37,7 @@ const addressFormSchema = z.object({
 interface CartItem {
   id: string;
   userId: string;
-  productId: string | null;
-  variantId: string | null;
+  productId: string;
   quantity: number;
   product: {
     id: string;
@@ -47,17 +45,8 @@ interface CartItem {
     product_image: string;
     basePrice: number;
     currency: string;
-  } | null;
-  variant: {
-    id: string;
-    name: string;
-    price: number;
-    image: string;
-    product: {
-      id: string;
-      name: string;
-    };
-  } | null;
+    isPerishable: boolean;
+  };
 }
 
 interface Address {
@@ -80,16 +69,16 @@ export default function CheckoutPage() {
   const [isAddressDialogOpen, setIsAddressDialogOpen] = useState(false);
 
   
-   useEffect(() => {
-        fetch('/api/auth/session')
-          .then(res => res.json())
-          .then(setServerUser)
-          .catch(console.error)
-          .finally(() => setIsLoading(false));
-      }, []);
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(setServerUser)
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
   
-    const user = clientSession?.user || serverUser;
-    const queryClient = useQueryClient();
+  const user = clientSession?.user || serverUser;
+  const queryClient = useQueryClient();
 
   // Main form for checkout
   const form = useForm<z.infer<typeof formSchema>>({
@@ -124,39 +113,40 @@ export default function CheckoutPage() {
     enabled: !!user?.token
   });
 
-  /// Fetch addresses
-const { data: addresses, isLoading: isAddressLoading } = useQuery({
-  queryKey: ['addresses'],
-  queryFn: async (): Promise<Address[]> => {
-    const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/address`, {
-      headers: { Authorization: `Bearer ${user?.token}` }
-    });
-    return res.data.data;
-  },
-  enabled: !!user?.token,
-  onSuccess: (data: Address[]) => {
-    if (data.length > 0) {
-      const defaultAddress = data.find(addr => addr.isDefault) || data[0];
-      form.setValue('addressId', defaultAddress.id);
+  // Fetch addresses
+  const { data: addresses, isLoading: isAddressLoading } = useQuery({
+    queryKey: ['addresses'],
+    queryFn: async (): Promise<Address[]> => {
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/address`, {
+        headers: { Authorization: `Bearer ${user?.token}` }
+      });
+      return res.data.data;
+    },
+    enabled: !!user?.token,
+    onSuccess: (data: Address[]) => {
+      if (data.length > 0) {
+        const defaultAddress = data.find(addr => addr.isDefault) || data[0];
+        form.setValue('addressId', defaultAddress.id);
+      }
     }
-  }
-} as UseQueryOptions<Address[], Error, Address[], ['addresses']>);
+  } as UseQueryOptions<Address[], Error, Address[], ['addresses']>);
+
   // Create new address mutation
-const createAddressMutation = useMutation({
-  mutationFn: async (values: z.infer<typeof addressFormSchema>) => {
-    const res = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/address/add-address`,
-      values,
-      { headers: { Authorization: `Bearer ${user?.token}` } }
-    );
-    return res.data;
-  },
-  onSuccess: () => {
-    toast.success('Address added successfully');
-    queryClient.invalidateQueries({queryKey:['addresses']}); // This will trigger a refetch
-    setIsAddressDialogOpen(false);
-    addressForm.reset();
-  },
+  const createAddressMutation = useMutation({
+    mutationFn: async (values: z.infer<typeof addressFormSchema>) => {
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/address/add-address`,
+        values,
+        { headers: { Authorization: `Bearer ${user?.token}` } }
+      );
+      return res.data;
+    },
+    onSuccess: () => {
+      toast.success('Address added successfully');
+      queryClient.invalidateQueries({queryKey:['addresses']});
+      setIsAddressDialogOpen(false);
+      addressForm.reset();
+    },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to add address');
     }
@@ -173,7 +163,6 @@ const createAddressMutation = useMutation({
         addressId: values.addressId,
         items: cartItems.map(item => ({
           productId: item.productId,
-          variantId: item.variantId,
           quantity: item.quantity
         })),
       };
@@ -207,11 +196,10 @@ const createAddressMutation = useMutation({
 
   // Calculate totals
   const subtotal = cartItems?.reduce((sum, item) => {
-    const price = item.variant?.price || item.product?.basePrice || 0;
-    return sum + (price * item.quantity);
+    return sum + (item.product.basePrice * item.quantity);
   }, 0) || 0;
 
-  const total = subtotal; // Add delivery fee if needed
+  const total = subtotal;
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -241,23 +229,6 @@ const createAddressMutation = useMutation({
   if (!user) {
     return <div className="container py-8">Redirecting to login...</div>;
   }
-
-  // Helper functions for displaying cart items
-  const getItemPrice = (item: CartItem) => {
-    return item.variant?.price || item.product?.basePrice || 0;
-  };
-
-  const getItemImage = (item: CartItem) => {
-    return item.variant?.image || item.product?.product_image || "/placeholder-product.jpg";
-  };
-
-  const getItemName = (item: CartItem) => {
-    return item.variant?.product?.name || item.product?.name || "Unknown Product";
-  };
-
-  const getVariantName = (item: CartItem) => {
-    return item.variant?.name || "";
-  };
 
   return (
     <div className="container py-8">
@@ -426,22 +397,26 @@ const createAddressMutation = useMutation({
                     <div key={item.id} className="flex gap-4">
                       <div className="relative h-16 w-16 rounded-md overflow-hidden">
                         <Image
-                          src={getItemImage(item)}
-                          alt={getItemName(item)}
+                          src={item.product.product_image || '/placeholder-product.jpg'}
+                          alt={item.product.name}
                           fill
                           className="object-cover"
                         />
                       </div>
                       <div>
-                        <h3 className="font-medium">{getItemName(item)}</h3>
-                        {getVariantName(item) && (
-                          <p className="text-sm text-gray-600">{getVariantName(item)}</p>
-                        )}
+                        <h3 className="font-medium">{item.product.name}</h3>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          item.product.isPerishable
+                            ? "bg-green-100 text-green-800"
+                            : "bg-blue-100 text-blue-800"
+                        }`}>
+                          {item.product.isPerishable ? "Perishable" : "Non-Perishable"}
+                        </span>
                         <p className="text-sm">
                           {item.quantity} × {new Intl.NumberFormat('en-NG', {
                             style: 'currency',
-                            currency: 'NGN',
-                          }).format(getItemPrice(item))}
+                            currency: item.product.currency || 'NGN',
+                          }).format(item.product.basePrice)}
                         </p>
                       </div>
                     </div>
