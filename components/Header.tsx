@@ -107,7 +107,7 @@ const user = clientSession?.user || serverUser;
           <Link href="/" className="flex items-center">
           <LuBuilding className="text-3xl text-green-600" />
             <h1 className="font-poppins ml-2 font-bold text-[18px]">
-              Enugu Food Loan
+              Enugu Food Scheme
             </h1>
           </Link>
         </div>
@@ -153,7 +153,7 @@ const user = clientSession?.user || serverUser;
         <div className="flex justify-between items-center mx-4">
           <Link href="/" onClick={closeMenu} className="flex items-center">
             <h1 className="font-poppins text-black font-bold text-[18px]">
-              ENUGU MARKETPLACE
+              Enugu Food Scheme
             </h1>
           </Link>
           
