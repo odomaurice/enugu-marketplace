@@ -88,7 +88,7 @@ const Sidebar = ({ dashboard }: SidebarProps) => {
       <div>
         <Link href="/" className="flex items-center">
           <h1 className="ml-2 text-black font-bold text-[18px]">
-            ENUGU MARKETPLACE
+            Enugu Food Scheme
           </h1>
         </Link>
       </div>
