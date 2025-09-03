@@ -21,8 +21,7 @@ interface Order {
   deliveredAt: string | null;
   items?: Array<{
     id: string;
-    productId: string | null;
-    variantId: string | null;
+    productId: string;
     quantity: number;
     unitPrice: number;
     total: number;
@@ -30,12 +29,8 @@ interface Order {
       id: string;
       name: string;
       product_image: string;
-    } | null;
-    variant: {
-      id: string;
-      name: string;
-      image: string;
-    } | null;
+      isPerishable: boolean;
+    };
   }>;
 }
 
@@ -44,29 +39,32 @@ export default function OrderConfirmationPage() {
   const [serverUser, setServerUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { data: orders,  isError } = useQuery({
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(setServerUser)
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const user = clientSession?.user || serverUser;
+
+  const { data: orders, isError } = useQuery({
     queryKey: ['userOrders'],
     queryFn: async () => {
       const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/all-order`, {
         headers: { 
-          Authorization: `Bearer ${user?.token || localStorage.getItem('token')}` 
+          Authorization: `Bearer ${user?.token}` 
         }
       });
       return res.data.data as Order[];
     },
-    staleTime: 1000 * 60 * 5 // 5 minutes
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: !!user?.token
   });
 
   // Get the most recent order
   const mostRecentOrder = orders?.[0];
-
-    useEffect(() => {
-      fetch('/api/auth/session')
-        .then(res => res.json())
-        .then(setServerUser)
-        .catch(console.error)
-        .finally(() => setIsLoading(false));
-    }, []);
 
   useEffect(() => {
     if (!isLoading && !isError && mostRecentOrder) {
@@ -76,8 +74,6 @@ export default function OrderConfirmationPage() {
       });
     }
   }, [mostRecentOrder, isLoading, isError]);
-
-  const user = clientSession?.user || serverUser;
 
   if (isLoading) {
     return (
@@ -117,9 +113,6 @@ export default function OrderConfirmationPage() {
             <Button asChild>
               <Link href="/products">Browse Products</Link>
             </Button>
-            {/* <Button variant="outline" asChild>
-              <Link href="/account/orders">View All Orders</Link>
-            </Button> */}
           </div>
         </div>
       </div>
@@ -180,6 +173,52 @@ export default function OrderConfirmationPage() {
           </div>
         </div>
 
+        {/* Order Items */}
+        {mostRecentOrder.items && mostRecentOrder.items.length > 0 && (
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h3 className="font-medium text-gray-900 dark:text-white mb-4">Order Items</h3>
+            <div className="space-y-4">
+              {mostRecentOrder.items.map((item) => (
+                <div key={item.id} className="flex gap-4 items-center">
+                  <div className="relative h-16 w-16 rounded-md overflow-hidden">
+                    <Image
+                      src={item.Product?.product_image || '/placeholder-product.jpg'}
+                      alt={item.Product?.name || 'Product image'}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900 dark:text-white">
+                      {item.Product?.name || 'Unknown Product'}
+                    </h4>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Quantity: {item.quantity}
+                    </p>
+                    {item.Product?.isPerishable !== undefined && (
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        item.Product.isPerishable
+                          ? "bg-green-100 text-green-800"
+                          : "bg-blue-100 text-blue-800"
+                      }`}>
+                        {item.Product.isPerishable ? "Perishable" : "Non-Perishable"}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-gray-900 dark:text-white">
+                      {formatCurrency(item.total, mostRecentOrder.currency)}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {formatCurrency(item.unitPrice, mostRecentOrder.currency)} each
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Status Bar */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center justify-between">
@@ -210,10 +249,9 @@ export default function OrderConfirmationPage() {
           </div>
         </div>
 
-      
         <div className="p-6">
           <p className="text-gray-600 dark:text-gray-300 text-center">
-            Your order has been successfully recieved and is being processed.
+            Your order has been successfully received and is being processed.
           </p>
         </div>
 
@@ -233,12 +271,6 @@ export default function OrderConfirmationPage() {
                 Continue Shopping
               </Link>
             </Button>
-            
-            {/* <Button variant="outline" asChild>
-              <Link href="/account/orders">
-                View All Orders
-              </Link>
-            </Button> */}
           </div>
         </div>
 

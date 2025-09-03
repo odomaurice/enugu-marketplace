@@ -3,18 +3,23 @@ import {  BsInstagram, BsLinkedin, BsTwitterX } from "react-icons/bs";
 export const stats = [
     {
       id: "stats-1",
-      title: "Active Users",
-      value: "10,800+",
+      title: "Potential Beneficiaries",
+      value: "500,000+",
     },
     {
       id: "stats-2",
-      title: "Trusted by Company",
-      value: "30+",
+      title: "Interest Rate",
+      value: "0%",
     },
     {
       id: "stats-3",
-      title: "Remarkable Members",
-      value: "2400+",
+      title: "Local Content Focus",
+      value: "100%",
+    },
+     {
+      id: "stats-4",
+      title: "Maximum Salary Deduction",
+      value: "1/3",
     },
   ];
 

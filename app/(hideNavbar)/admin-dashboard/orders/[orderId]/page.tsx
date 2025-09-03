@@ -28,7 +28,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
     redirect('/auth/error?error=Unauthorized');
   }
 
-  // Now safely use params.orderId
+  
   let order = null;
   try {
     const response = await axios.get(
