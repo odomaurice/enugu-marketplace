@@ -311,6 +311,8 @@ const CartPage = () => {
                             onChange={(e) => handleInputQuantityChange(item.id, e.target.value)}
                             className="w-12 text-center border-0 focus:outline-none"
                             disabled={updateCartMutation.isPending}
+                            title="Quantity"
+                            placeholder="Qty"
                           />
                           <Button
                             variant="ghost"

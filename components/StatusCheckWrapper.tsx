@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import ComplianceUpload from './ComplianceUpload';
+import ConsentUpload from './ConsentUpload';
   import { getSession } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function StatusCheckWrapper({ children }: { children: React.ReactNode }) {
   const { data: clientSession, status: sessionStatus } = useSession();
@@ -12,7 +14,7 @@ export default function StatusCheckWrapper({ children }: { children: React.React
   const [isLoading, setIsLoading] = useState(true);
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get('returnUrl') || '/employee-dashboard';
-  const [showComplianceModal, setShowComplianceModal] = useState(false);
+  const [showconsentModal, setShowconsentModal] = useState(false);
   const [hasCheckedStatus, setHasCheckedStatus] = useState(false);
 
 
@@ -34,8 +36,13 @@ export default function StatusCheckWrapper({ children }: { children: React.React
   useEffect(() => {
     if (sessionStatus === 'authenticated' && user && !hasCheckedStatus) {
       // Check if user status is PENDING
-      if (user.status === 'PENDING' && user.role === 'user') {
-        setShowComplianceModal(true);
+      if (user.is_consent_submitted === false && user.role === 'user') {
+        setShowconsentModal(true);
+      }
+
+      if(user.status === "PENDING") {
+        toast.info("Your account is still pending. Please be patient while your account is approved.");
+
       }
       setHasCheckedStatus(true);
     }
@@ -46,11 +53,11 @@ export default function StatusCheckWrapper({ children }: { children: React.React
   const handleUploadSuccess = async () => {
     // Refresh session to get updated status
     await getSession();
-    setShowComplianceModal(false);
+    setShowconsentModal(false);
   };
 
   const handleCloseModal = () => {
-    setShowComplianceModal(false);
+    setShowconsentModal(false);
     // Optional: You might want to sign out the user here if they cancel
     // signOut({ redirect: false });
   };
@@ -59,8 +66,8 @@ export default function StatusCheckWrapper({ children }: { children: React.React
     <>
       {children}
       {user?.token && (
-        <ComplianceUpload
-          isOpen={showComplianceModal}
+        <ConsentUpload
+          isOpen={showconsentModal}
           onClose={handleCloseModal}
           onUploadSuccess={handleUploadSuccess}
           token={user.token}

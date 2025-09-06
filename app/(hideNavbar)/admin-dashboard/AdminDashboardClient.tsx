@@ -4,8 +4,10 @@ import Sidebar from "@/components/dashboards/admin/sidebar/Sidebar";
 import MobileSidebar from "@/components/dashboards/admin/sidebar/MobileSidebar";
 import MobileNavbar from "@/components/dashboards/admin/navbar/MobileNavbar";
 import ConfirmLogout from "@/components/ConfirmLogout";
-import { ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { ToastContainer } from "react-toastify";
+
 
 export default function AdminLayoutClient({
   children,
@@ -37,6 +39,7 @@ export default function AdminLayoutClient({
         <main className="flex-1 overflow-y-auto p-4 md:p-1 scrollbar-hide bg-stone-100 relative">
           <ConfirmLogout />
           {children}
+          
           <ToastContainer position="top-right" autoClose={3000} />
         </main>
       </section>

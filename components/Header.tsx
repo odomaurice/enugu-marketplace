@@ -9,14 +9,14 @@ import ShowProfile from "./ShowProfile";
 import { HiOutlineMenuAlt4 } from "react-icons/hi";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { LuBuilding } from "react-icons/lu";
+import Image from "next/image";
 
 const navLinks = [
   // { name: "Home", href: "/" },
       { name: "Products", href: "/products" },
   { name: "Executive Summary", href: "/executive-summary" },
   { name: "Benefits", href: "/benefits" },
-    { name: "Implementation", href: "/benefits" },
+    { name: "Implementation", href: "/implementation" },
 ];
 
 function CartPreview({ token }: { token?: string }) {
@@ -102,12 +102,22 @@ const user = clientSession?.user || serverUser;
   return (
     <header className="font-header h-[75px] dark:bg-black bg-[#FAF9F6] sticky top-0 text-black font-semibold z-50 w-full">
       {/* DESKTOP */}
-      <div className={`hidden w-full h-full sm:flex justify-between items-center px-2 md:px-4 ${!isAuthPage ? "xl:max-w-full xl:mx-auto" : ""}`}>
-        <div className="flex md:pl-6 items-center">
-          <Link href="/" className="flex items-center">
-          <LuBuilding className="text-3xl text-green-600" />
-            <h1 className="font-poppins ml-2 font-bold text-[18px]">
-              Enugu Food Scheme
+      <div
+        className={`hidden w-full h-full sm:flex justify-between items-center px-2 md:px-4 ${
+          !isAuthPage ? "xl:max-w-full xl:mx-auto" : ""
+        }`}
+      >
+        <div className="">
+          <Link href="/" className="flex space-x-1">
+            <Image
+              src={"/logo.png"}
+              alt="logo"
+              width={50}
+              height={50}
+              className="text-[50px] text-green-600"
+            />
+            <h1 className=" ml-2 font-bold text-[27px]">
+              Enugu <span className="text-[25px] text-emerald-700 ">Food Scheme</span>
             </h1>
           </Link>
         </div>
@@ -118,45 +128,49 @@ const user = clientSession?.user || serverUser;
               <Link
                 href={link.href}
                 key={link.name}
-                className={pathname.startsWith(link.href) 
-                  ? "font-bold text-green-700" 
-                  : "font-normal hover:text-gray-600"}
+                className={
+                  pathname.startsWith(link.href)
+                    ? "font-bold text-green-700"
+                    : "font-normal hover:text-gray-600"
+                }
               >
                 {link.name}
               </Link>
             ))}
           </nav>
           <div className="flex items-center gap-4">
-          {status === "authenticated" && (
-            <>
-              {user?.role === "user" && <CartPreview token={user?.token} />}
-              <ShowProfile />
-            </>
-          )}
-          
-          {status === "unauthenticated" && (
-            <Button
-              asChild
-              className="rounded-md bg-green-700 hover:bg-green-700 hover:text-white text-[14px] px-6 py-2 text-white border-2 border-green-700"
-            >
-              <Link href="/employee-login">Login</Link>
-            </Button>
-          )}
-        </div>
-        </div>
+            {status === "authenticated" && (
+              <>
+                {user?.role === "user" && <CartPreview token={user?.token} />}
+                <ShowProfile />
+              </>
+            )}
 
-        
+            {status === "unauthenticated" && (
+              <Button
+                asChild
+                className="rounded-md bg-green-700 hover:bg-green-700 hover:text-white text-[14px] px-6 py-2 text-white border-2 border-green-700"
+              >
+                <Link href="/employee-login">Login</Link>
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* MOBILE */}
-      <div className={`sm:hidden fixed top-0 w-full z-[999] py-4 ${menu ? "bg-white" : "bg-white"}`}>
+      <div
+        className={`sm:hidden fixed top-0 w-full z-[999] py-4 ${
+          menu ? "bg-white" : "bg-white"
+        }`}
+      >
         <div className="flex justify-between items-center mx-4">
           <Link href="/" onClick={closeMenu} className="flex items-center">
             <h1 className="font-poppins text-black font-bold text-[18px]">
               ENUGU MARKETPLACE
             </h1>
           </Link>
-          
+
           <button onClick={toggleMenu} className="p-2">
             {menu ? (
               <X className="text-black w-6 h-6" />
@@ -174,9 +188,11 @@ const user = clientSession?.user || serverUser;
                   key={link.name}
                   href={link.href}
                   onClick={closeMenu}
-                  className={`py-2 ${pathname.startsWith(link.href) 
-                    ? "font-bold text-green-600" 
-                    : "font-semibold hover:text-gray-600"}`}
+                  className={`py-2 ${
+                    pathname.startsWith(link.href)
+                      ? "font-bold text-green-600"
+                      : "font-semibold hover:text-gray-600"
+                  }`}
                 >
                   {link.name}
                 </Link>
@@ -198,7 +214,9 @@ const user = clientSession?.user || serverUser;
                   asChild
                   className="w-full bg-green-700 rounded-full hover:bg-green-600"
                 >
-                  <Link href="/employee-login" onClick={closeMenu}>Employee Login</Link>
+                  <Link href="/employee-login" onClick={closeMenu}>
+                    Employee Login
+                  </Link>
                 </Button>
               )}
             </div>

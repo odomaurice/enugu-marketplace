@@ -20,7 +20,7 @@ declare module "next-auth" {
     loan_unit?: number;
     loan_amount_collected?: number;
     is_address_set?: boolean;
-    
+    is_compliance_submitted?: boolean; 
     // Admin-specific fields (optional)
     username?: string;
     
@@ -46,7 +46,9 @@ declare module "next-auth/jwt" {
     email: string;
     role: string;
     token: string;
-    status?: string; // Add status field
+    status?: string; 
+    is_compliance_submitted?: boolean;
+    
     
     // Employee-specific fields
     phone?: string;

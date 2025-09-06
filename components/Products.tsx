@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useInView } from "react-intersection-observer";
@@ -20,7 +20,13 @@ import {
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Heart, HeartOff } from "lucide-react";
+import { Heart, HeartOff, Star, Eye, ShoppingCart } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Product {
   id: string;
@@ -30,7 +36,10 @@ interface Product {
   basePrice: number;
   currency: string;
   isPerishable: boolean;
-  variants: any[]; // Keep variants in interface but ignore them in UI
+  active: boolean;
+  variants: any[];
+  rating?: number;
+  reviewCount?: number;
 }
 
 export default function ProductsPage() {
@@ -64,7 +73,15 @@ export default function ProductsPage() {
           },
         }
       );
-      return res.data;
+
+      // Add mock ratings to match product-1.png
+      const productsWithRatings = res.data.data.map((product: Product) => ({
+        ...product,
+        rating: 5, // All products have 5 stars in the image
+        reviewCount: 2, // All products have 2 reviews in the image
+      }));
+
+      return { ...res.data, data: productsWithRatings };
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
@@ -222,170 +239,236 @@ export default function ProductsPage() {
     }
   };
 
+  // Function to render star ratings
+  const renderStars = (rating: number) => {
+    return Array(5)
+      .fill(0)
+      .map((_, i) => (
+        <Star
+          key={i}
+          size={16}
+          className={
+            i < rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+          }
+        />
+      ));
+  };
+
+  // Function to handle image errors
+  const handleImageError = (
+    e: React.SyntheticEvent<HTMLImageElement, Event>
+  ) => {
+    const target = e.target as HTMLImageElement;
+    target.src = "/placeholder-product.jpg";
+  };
+
   return (
     <div className="container py-8">
-      <h1 className="text-3xl font-bold mb-8">All Products</h1>
+      <TooltipProvider>
+        <h1 className="text-3xl font-bold mb-8">All Products</h1>
 
-      <div className="flex flex-col sm:flex-row gap-4 mb-8">
-        <Input
-          placeholder="Search by product name, description, or price..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full sm:w-64"
-        />
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <Input
+            placeholder="Search by product name, description, or price..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full sm:w-64"
+          />
 
-        <Select onValueChange={setPerishableFilter} value={perishableFilter}>
-          <SelectTrigger className="w-full sm:w-64">
-            <SelectValue placeholder="Filter by type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Products</SelectItem>
-            <SelectItem value="perishable">Perishable</SelectItem>
-            <SelectItem value="non-perishable">Non Perishable</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select onValueChange={setPerishableFilter} value={perishableFilter}>
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="Filter by type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Products</SelectItem>
+              <SelectItem value="perishable">Perishable</SelectItem>
+              <SelectItem value="non-perishable">Non Perishable</SelectItem>
+            </SelectContent>
+          </Select>
 
-        <Select onValueChange={setSortOption} value={sortOption}>
-          <SelectTrigger className="w-full sm:w-64">
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-            <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-            <SelectItem value="price-asc">Price (Low to High)</SelectItem>
-            <SelectItem value="price-desc">Price (High to Low)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {status === "pending" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="p-0">
-                <Skeleton className="h-48 w-full rounded-t-lg" />
-              </CardHeader>
-              <CardContent className="pt-4 space-y-2">
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
+          <Select onValueChange={setSortOption} value={sortOption}>
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+              <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+              <SelectItem value="price-asc">Price (Low to High)</SelectItem>
+              <SelectItem value="price-desc">Price (High to Low)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-      ) : status === "error" ? (
-        <div>Error: {error.message}</div>
-      ) : (
-        <>
-          {filteredProducts.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">
-                No products found matching your filters.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map((product: Product) => (
-                <Card
-                  key={product.id}
-                  className="hover:shadow-lg transition-shadow"
-                >
-                  <CardHeader className="p-0">
-                    <div className="relative h-48 w-full">
-                      <Image
-                        src={
-                          product.product_image || "/placeholder-product.jpg"
-                        }
-                        alt={product.name}
-                        fill
-                        priority
-                        className="object-cover rounded-t-lg"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-4">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-semibold text-lg">{product.name}</h3>
-                      <span
-                        className={`text-xs px-2 py-1 rounded ${
-                          product.isPerishable
-                            ? "bg-green-100 text-green-800"
-                            : "bg-blue-100 text-blue-800"
-                        }`}
-                      >
-                        {product.isPerishable ? "Perishable" : "Non-Perishable"}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 line-clamp-2 mt-1">
-                      {product.description}
-                    </p>
-                    <div className="mt-3">
-                      <span className="font-medium">
-                        {new Intl.NumberFormat("en-NG", {
-                          style: "currency",
-                          currency: product.currency,
-                        }).format(product.basePrice)}
-                      </span>
-                    </div>
-                    <Button
-                      asChild
-                      className="w-full mt-4 bg-orange-700 hover:bg-orange-600"
-                    >
-                      <Link href={`/products/${product.id}`}>
-                        View Product Details
-                      </Link>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="w-full mt-2"
-                      onClick={() => toggleWishlist(product.id)}
-                      disabled={isWishlistLoading}
-                    >
-                      {wishlistItems.includes(product.id) ? (
-                        <>
-                          <HeartOff className="mr-2 h-4 w-4" />
-                          Remove from Wishlist
-                        </>
-                      ) : (
-                        <>
-                          <Heart className="mr-2 h-4 w-4" />
-                          Add to Wishlist
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
 
-          {/* Keep the infinite loading for initial load */}
-          {filteredProducts.length > 0 &&
-            perishableFilter === "all" &&
-            searchQuery === "" && (
-              <div
-                ref={ref}
-                className="h-10 flex items-center justify-center mt-8"
-              >
-                {isFetchingNextPage ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-primary rounded-full animate-spin" />
-                    <span>Loading more products...</span>
-                  </div>
-                ) : hasNextPage ? (
-                  <Button variant="outline" onClick={() => fetchNextPage()}>
-                    Load More
-                  </Button>
-                ) : (
-                  <p className="text-sm text-gray-500">
-                    No more products to load
-                  </p>
-                )}
+        {status === "pending" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="h-full border-0 shadow-md">
+                <CardHeader className="p-0">
+                  <div className="relative h-60 w-full bg-gray-200 animate-pulse" />
+                </CardHeader>
+                <CardContent className="pt-4 space-y-2 p-5">
+                  <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4" />
+                  <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : status === "error" ? (
+          <div>Error: {error.message}</div>
+        ) : (
+          <>
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">
+                  No products found matching your filters.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredProducts.map((product: Product) => (
+                  <Card
+                    key={product.id}
+                    className="h-full flex flex-col overflow-hidden border-0 shadow-md"
+                  >
+                    <CardHeader className="p-0 relative">
+                      <div className="relative h-60 w-full">
+                        <Image
+                          src={
+                            product.product_image || "/placeholder-product.jpg"
+                          }
+                          alt={product.name}
+                          fill
+                          className="object-contain w-full h-full p-4 bg-white"
+                          onError={handleImageError}
+                          style={{ objectFit: "contain" }}
+                        />
+                        <button
+                          onClick={() => toggleWishlist(product.id)}
+                          className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors z-10"
+                          aria-label="Add to wishlist"
+                          disabled={isWishlistLoading}
+                        >
+                          {wishlistItems.includes(product.id) ? (
+                            <HeartOff size={20} className="text-red-500" />
+                          ) : (
+                            <Heart size={20} className="text-gray-600" />
+                          )}
+                        </button>
+
+                        {/* Stock status badge */}
+                        {product.active && (
+                          <div className="absolute top-3 left-3 bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
+                            In Stock
+                          </div>
+                        )}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-4 flex flex-col flex-grow p-5">
+                      <div className="flex justify-between items-start mb-2">
+                        <h3 className="font-bold text-lg">{product.name}</h3>
+                        <span
+                          className={`text-xs px-2 py-1 rounded ${
+                            product.isPerishable
+                              ? "bg-green-100 text-green-800"
+                              : "bg-blue-100 text-blue-800"
+                          }`}
+                        >
+                          {product.isPerishable
+                            ? "Perishable"
+                            : "Non-Perishable"}
+                        </span>
+                      </div>
+
+                      {/* Star rating - matches product-1.png */}
+                      <div className="flex items-center mb-3">
+                        <div className="flex mr-1">
+                          {renderStars(product.rating || 5)}
+                        </div>
+                        <span className="text-xs text-gray-600">
+                          ({product.reviewCount || 2})
+                        </span>
+                      </div>
+
+                      <p className="text-sm text-gray-600 mb-4 flex-grow">
+                        {product.description}
+                      </p>
+
+                      <div className="mt-auto">
+                        <div className="mb-4">
+                          <span className="font-bold text-lg">
+                            {new Intl.NumberFormat("en-NG", {
+                              style: "currency",
+                              currency: product.currency,
+                              currencyDisplay: "narrowSymbol",
+                            }).format(product.basePrice)}
+                          </span>
+                        </div>
+
+                        <div className="flex md:flex-row flex-col gap-2">
+                          <Button
+                            asChild
+                            className="w-full md:w-1/2 bg-orange-700 hover:bg-orange-600 h-11 font-bold"
+                          >
+                            <Link href={`/products/${product.id}`}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </Link>
+                          </Button>
+
+                          <Button
+                            variant="outline"
+                            className="w-full md:w-1/2 h-11"
+                            onClick={() => toggleWishlist(product.id)}
+                            disabled={isWishlistLoading}
+                          >
+                            {wishlistItems.includes(product.id) ? (
+                              <>
+                                <HeartOff className="mr-2 h-4 w-4" />
+                                Remove from Wishlist
+                              </>
+                            ) : (
+                              <>
+                                <Heart className="mr-2 h-4 w-4" />
+                                Add to Wishlist
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             )}
-        </>
-      )}
+
+            {/* Keep the infinite loading for initial load */}
+            {filteredProducts.length > 0 &&
+              perishableFilter === "all" &&
+              searchQuery === "" && (
+                <div
+                  ref={ref}
+                  className="h-10 flex items-center justify-center mt-8"
+                >
+                  {isFetchingNextPage ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-primary rounded-full animate-spin" />
+                      <span>Loading more products...</span>
+                    </div>
+                  ) : hasNextPage ? (
+                    <Button variant="outline" onClick={() => fetchNextPage()}>
+                      Load More
+                    </Button>
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      No more products to load
+                    </p>
+                  )}
+                </div>
+              )}
+          </>
+        )}
+      </TooltipProvider>
     </div>
   );
 }

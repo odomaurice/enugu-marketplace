@@ -114,12 +114,12 @@ export function ProductsList({ token }: { token: string }) {
             {products.map((product) => (
               <Card key={product.id} className="hover:shadow-lg transition-shadow w-[400px]">
                 <CardHeader className="p-0">
-                  <div className="relative h-48 w-full">
+                  <div className="relative mt-6 h-48 w-full">
                     <Image
-                      src={getProductImage(product.name)}
+                      src={product.product_image || getProductImage(product.name)}
                       alt={product.name}
                       fill
-                      className="object-cover rounded-t-lg"
+                      className="object-contain rounded-t-lg"
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       priority={products.indexOf(product) < 2}
                     />
