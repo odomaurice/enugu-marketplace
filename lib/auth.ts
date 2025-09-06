@@ -46,20 +46,15 @@ export const authOptions: NextAuthOptions = {
           const data = await response.json();
           if (!response.ok) throw new Error(data.message || 'Login failed');
 
-          // Decode token to get all admin data
-          const tokenPayload = JSON.parse(
-            Buffer.from(data.token.split('.')[1], 'base64').toString()
-          );
-
+          // ONLY use fresh data from server response - NO token decoding!
           return {
-            ...data.admin,
-            ...tokenPayload.admin,
+            ...data.admin, // Fresh data from server
             id: data.admin?.id?.toString(),
             userId: data.admin?.id?.toString(),
             name: `${data.admin?.firstname} ${data.admin?.lastname}`.trim(),
             token: data.token,
             role: "admin",
-            status: data.admin?.status || "ACTIVE" // Default to ACTIVE for admins
+            status: data.admin?.status || "ACTIVE"
           };
         } catch (error: any) {
           throw new Error(error.message || 'Authentication failed');
@@ -94,24 +89,20 @@ export const authOptions: NextAuthOptions = {
           const data = await response.json();
           if (!response.ok) throw new Error(data.message || 'OTP verification failed');
 
-          // Decode token to get all user data
-          const tokenPayload = JSON.parse(
-            Buffer.from(data.token.split('.')[1], 'base64').toString()
-          );
-
+          // ONLY use fresh data from server response - NO token decoding!
           return {
-            ...data.user,
-            ...tokenPayload.user,
+            ...data.user, // Fresh data from server
             id: data.user?.id?.toString(),
             userId: data.user?.employee_id,
             name: `${data.user?.firstname} ${data.user?.lastname}`.trim(),
             token: data.token,
             role: "user",
-            status: data.user?.status || "PENDING", // Include status
-            loan_unit: tokenPayload.user?.loan_unit ?? 0,
-            loan_amount_collected: tokenPayload.user?.loan_amount_collected ?? 0,
-            salary_per_month: tokenPayload.user?.salary_per_month ?? 0,
-            government_entity: tokenPayload.user?.government_entity ?? ''
+            status: data.user?.status || "PENDING",
+            is_compliance_submitted: data.user?.is_compliance_submitted || false,
+            loan_unit: data.user?.loan_unit ?? 0,
+            loan_amount_collected: data.user?.loan_amount_collected ?? 0,
+            salary_per_month: data.user?.salary_per_month ?? 0,
+            government_entity: data.user?.government_entity ?? ''
           };
         } catch (error: any) {
           throw new Error(error.message || 'Authentication failed');
@@ -123,40 +114,18 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        // Initialize tokenPayload with empty object
-        let tokenPayload: any = { user: {}, admin: {} };
-        
-        try {
-          if (user.token) {
-            tokenPayload = JSON.parse(
-              Buffer.from(user.token.split('.')[1], 'base64').toString()
-            );
-          }
-        } catch (e) {
-          console.error("Token decode error:", e);
-        }
-
-        // Handle admin vs user differently
+        // Only use the fresh user data from authorize function
+        // NO token decoding - that would give us old data!
         if (user.role === "admin") {
           return {
             ...token,
-            ...user,
-            ...(tokenPayload.admin || {}),
-            // Admin-specific fields
-            role: "admin",
-            status: user.status || "ACTIVE"
+            ...user, // Fresh data from server
+            role: "admin"
           };
         } else {
           return {
             ...token,
-            ...user,
-            ...(tokenPayload.user || {}),
-            // User-specific fields with fallbacks
-            loan_unit: user.loan_unit ?? tokenPayload.user?.loan_unit ?? 0,
-            loan_amount_collected: user.loan_amount_collected ?? tokenPayload.user?.loan_amount_collected ?? 0,
-            salary_per_month: user.salary_per_month ?? tokenPayload.user?.salary_per_month ?? 0,
-            government_entity: user.government_entity ?? tokenPayload.user?.government_entity ?? '',
-            status: user.status || "PENDING", // Include status
+            ...user, // Fresh data from server
             role: "user"
           };
         }
@@ -165,25 +134,11 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
-      // Initialize tokenPayload with empty object
-      let tokenPayload: any = { user: {}, admin: {} };
-      
-      try {
-        if (token.token) {
-          tokenPayload = JSON.parse(
-            Buffer.from(token.token.split('.')[1], 'base64').toString()
-          );
-        }
-      } catch (e) {
-        console.error("Token decode error:", e);
-      }
-
-      // Handle admin vs user differently
+      // NO token decoding here either - use the fresh data from jwt callback
       if (token.role === "admin") {
         session.user = {
           ...session.user,
-          ...token,
-          ...(tokenPayload.admin || {}),
+          ...token, // Fresh data from jwt callback
           id: token.id as string,
           name: token.name as string,
           email: token.email as string,
@@ -194,20 +149,18 @@ export const authOptions: NextAuthOptions = {
       } else {
         session.user = {
           ...session.user,
-          ...token,
-          ...(tokenPayload.user || {}),
-          // User-specific fields with fallbacks
-          loan_unit: Number(token.loan_unit ?? tokenPayload.user?.loan_unit ?? 0),
-          loan_amount_collected: Number(token.loan_amount_collected ?? tokenPayload.user?.loan_amount_collected ?? 0),
-          salary_per_month: Number(token.salary_per_month ?? tokenPayload.user?.salary_per_month ?? 0),
-          government_entity: token.government_entity ?? tokenPayload.user?.government_entity ?? '',
-          status: token.status as string || "PENDING", // Include status
-          // Core fields
+          ...token, // Fresh data from jwt callback
           id: token.id as string,
           name: token.name as string,
           email: token.email as string,
           role: token.role as string,
-          token: token.token as string
+          token: token.token as string,
+          status: token.status as string || "PENDING",
+          is_compliance_submitted: token.is_compliance_submitted as boolean || false,
+          loan_unit: Number(token.loan_unit ?? 0),
+          loan_amount_collected: Number(token.loan_amount_collected ?? 0),
+          salary_per_month: Number(token.salary_per_month ?? 0),
+          government_entity: token.government_entity as string ?? ''
         };
       }
 

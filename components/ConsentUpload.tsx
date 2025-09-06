@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, X, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import axios from 'axios';
 
-interface ComplianceUploadProps {
+interface consentUploadProps {
   isOpen: boolean;
   onClose: () => void;
   onUploadSuccess: () => void;
@@ -18,13 +19,13 @@ interface ComplianceUploadProps {
   returnUrl?: string; 
 }
 
-export default function ComplianceUpload({ 
+export default function ConsentUpload({ 
   isOpen, 
   onClose, 
   onUploadSuccess, 
   token, 
   returnUrl 
-}: ComplianceUploadProps) {
+}: consentUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -94,7 +95,7 @@ export default function ComplianceUpload({
       console.log('Upload response:', response.data);
 
       if (response.data.success) {
-        toast.success('Compliance document uploaded successfully!');
+        toast.success('consent document uploaded successfully!');
         onUploadSuccess();
         onClose();
         
@@ -116,7 +117,7 @@ export default function ComplianceUpload({
       } else if (error.request) {
         toast.error('Network error. Please check your connection and try again.');
       } else {
-        toast.error(error.message || 'Failed to upload compliance document');
+        toast.error(error.message || 'Failed to upload consent document');
       }
     } finally {
       setIsUploading(false);
@@ -127,15 +128,15 @@ export default function ComplianceUpload({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Upload Compliance Document</DialogTitle>
+          <DialogTitle>Upload consent Document</DialogTitle>
           <DialogDescription>
-            Your account status is pending. Please upload a compliance document to complete your verification.
+            Your account status is pending. Please upload a consent document to complete your verification.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="compliance_form">Compliance Document (Image)</Label>
+            <Label htmlFor="consent_form">consent Document (Image)</Label>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center relative">
               {previewUrl ? (
                 <div className="relative">

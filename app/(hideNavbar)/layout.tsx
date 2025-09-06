@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
 import "../globals.css";
 import Providers from "@/providers/Providers";
-import { Toaster } from "@/components/ui/sonner";
+
 import StatusCheckWrapper from "@/components/StatusCheckWrapper";
 import { Suspense } from "react";
+import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: "Enugu Marketplace",
-  description: "The marketplace for Enugu",
+  title: "Enugu Food Scheme",
+  description: "Food Loan Scheme for Enugu State Workers",
+
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
@@ -19,7 +24,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <Providers>
-          <Toaster position="top-center" className="z-50" />
+          <Toaster />
           <Suspense fallback={<div>Loading...</div>}>
           <StatusCheckWrapper>
           {children}

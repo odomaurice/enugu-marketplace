@@ -139,7 +139,7 @@ export function EditProductDialog({ product, token, onSuccess }: EditProductDial
       <DialogTrigger asChild>
         <Button variant="outline">Edit Product</Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] font-header">
+      <DialogContent className="sm:max-w-[800px] font-header">
         <ScrollArea className="h-[600px] w-full p-4">
           <DialogHeader>
             <DialogTitle className="mb-4">Edit Product</DialogTitle>
