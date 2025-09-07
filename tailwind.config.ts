@@ -8,9 +8,7 @@ export default {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-	backgroundImage: {
-        'home': "url('/travel-hero.jpeg')",
-      },
+	
 	// screens: {
 	// 	xs: "480px",
 	// 	ss: "620px",

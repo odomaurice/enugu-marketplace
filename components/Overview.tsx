@@ -1,74 +1,197 @@
+'use client'
+
 import Image from 'next/image';
+import { motion } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
+import { FaMapMarkerAlt, FaBuilding, FaAward, FaLightbulb } from 'react-icons/fa';
 
 const LeadershipProfile = () => {
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1,
+  });
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        delayChildren: 0.3
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring" as const,
+        damping: 12,
+        stiffness: 100
+      }
+    }
+  };
+
+  const imageVariants = {
+    hidden: { opacity: 0, scale: 0.8 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        type: "spring" as const,
+        stiffness: 100,
+        delay: 0.5
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-r from-green-500 to-blue-600 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 py-16 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden opacity-10">
+        <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-white"></div>
+        <div className="absolute top-1/4 right-0 w-64 h-64 rounded-full bg-white"></div>
+        <div className="absolute bottom-0 left-1/3 w-96 h-96 rounded-full bg-white"></div>
+      </div>
+
+      <div className="max-w-6xl mx-auto relative z-10">
         {/* Header Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-100 mb-4">Strategic Leadership</h1>
-          <div className="w-24 h-1 bg-green-300 mx-auto"></div>
-        </div>
+        <motion.div 
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+        >
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">Strategic Leadership</h1>
+          <div className="w-32 h-1 bg-gradient-to-r from-emerald-300 to-teal-300 mx-auto rounded-full"></div>
+          <p className="text-emerald-100 mt-6 max-w-2xl mx-auto text-lg">
+            Visionary leadership driving innovation and sustainable development in Enugu State
+          </p>
+        </motion.div>
 
         {/* Profile Content */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <motion.div 
+          ref={ref}
+          className="bg-white rounded-3xl shadow-2xl overflow-hidden"
+          variants={containerVariants}
+          initial="hidden"
+          animate={inView ? "visible" : "hidden"}
+        >
           <div className="md:flex">
-          
-            <div className="md:w-2/5 flex items-center justify-center p-8 bg-gradient-to-br from-green-400 to-blue-500">
-              <div className="text-center">
-                <div className="w-60 h-60 mx-auto rounded-md overflow-hidden relative mb-4">
+            {/* Image Section */}
+            <motion.div 
+              className="md:w-2/5 flex items-center justify-center p-8 md:p-12 bg-gradient-to-br from-emerald-600 to-teal-700 relative"
+              variants={imageVariants}
+            >
+              <div className="absolute top-6 right-6 opacity-20">
+                <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 15L7 20L12 15ZM12 15L17 10L12 15ZM12 15L7 10L12 15ZM12 15L17 20L12 15Z" stroke="white" strokeWidth="2"/>
+                </svg>
+              </div>
+              
+              <div className="text-center relative z-10">
+                <div className="w-56 h-56 md:w-64 md:h-64 mx-auto rounded-2xl overflow-hidden relative mb-6 shadow-2xl border-4 border-white/20">
                   <Image 
                     src="/Engr.jpeg" 
                     alt="Michael Ogbuekwe" 
                     fill
-                    // style={{objectFit: 'cover'}}
-                    className=" object-cover"
+                    className="object-cover"
                   />
                 </div>
-                <p className="text-sm text-gray-100">Leadership Portrait</p>
+                
+                <div className="bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 inline-block">
+                  <p className="text-sm text-white font-medium">Leadership Portrait</p>
+                </div>
+                
+                {/* Decorative elements */}
+                <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-emerald-400/30"></div>
+                <div className="absolute -top-4 -right-4 w-12 h-12 rounded-full bg-teal-400/40"></div>
               </div>
-            </div>
+            </motion.div>
             
             {/* Content Section */}
-            <div className="p-8 md:w-3/5">
+            <div className="p-8 md:p-12 md:w-3/5">
               <div className="flex flex-col h-full justify-center">
-                <h2 className="text-3xl font-bold text-gray-900 mb-2">
+                <motion.h2 
+                  className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
+                  variants={itemVariants}
+                >
                   Michael Ogbuekwe
-                </h2>
+                </motion.h2>
                 
-                <div className="mb-6">
-                  <p className="text-lg text-gray-700 font-medium">
-                    Special Adviser to the Governor of Enugu State
-                  </p>
-                  <p className="text-lg text-gray-700 font-medium">
-                    MD/CEO, Enugu State Marketing Company
-                  </p>
-                </div>
-                
-                <p className="text-gray-600 leading-relaxed mb-8 border-l-4 border-green-500 pl-4 py-2">
-                  Leading the strategic development of innovative solutions that enhance worker welfare 
-                  while driving sustainable economic growth in Enugu State's agricultural sector.
-                </p>
-                
-                <div className="flex space-x-4">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                    </svg>
-                    <span>Enugu, Nigeria</span>
+                <motion.div 
+                  className="mb-8"
+                  variants={itemVariants}
+                >
+                  <div className="flex items-center mb-3">
+                    <div className="w-2 h-8 bg-emerald-500 rounded-full mr-3"></div>
+                    <p className="text-xl text-emerald-700 font-semibold">
+                      Special Adviser to the Governor of Enugu State
+                    </p>
                   </div>
                   
-                  <div className="flex items-center text-sm text-gray-500">
-                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
-                    </svg>
-                    <span>Government</span>
+                  <div className="flex items-center">
+                    <div className="w-2 h-8 bg-teal-500 rounded-full mr-3"></div>
+                    <p className="text-xl text-teal-700 font-semibold">
+                      MD/CEO, Enugu State Marketing Company
+                    </p>
                   </div>
-                </div>
+                </motion.div>
+                
+                <motion.div 
+                  className="mb-8 p-6 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border-l-4 border-emerald-500"
+                  variants={itemVariants}
+                >
+                  <div className="flex items-start">
+                    <FaLightbulb className="text-2xl text-emerald-600 mr-3 mt-1" />
+                    <p className="text-gray-700 leading-relaxed text-lg italic">
+                      "Leading the strategic development of innovative solutions that enhance worker welfare 
+                      while driving sustainable economic growth in Enugu State's agricultural sector."
+                    </p>
+                  </div>
+                </motion.div>
+                
+                <motion.div 
+                  className="flex flex-wrap gap-4 mb-8"
+                  variants={itemVariants}
+                >
+                  <div className="flex items-center px-4 py-2 bg-emerald-100 rounded-full">
+                    <FaMapMarkerAlt className="text-emerald-600 mr-2" />
+                    <span className="text-emerald-800 font-medium">Enugu, Nigeria</span>
+                  </div>
+                  
+                  <div className="flex items-center px-4 py-2 bg-teal-100 rounded-full">
+                    <FaBuilding className="text-teal-600 mr-2" />
+                    <span className="text-teal-800 font-medium">Government</span>
+                  </div>
+                  
+                  <div className="flex items-center px-4 py-2 bg-green-100 rounded-full">
+                    <FaAward className="text-green-600 mr-2" />
+                    <span className="text-green-800 font-medium">Leadership</span>
+                  </div>
+                </motion.div>
+                
+                <motion.div 
+                  className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-gray-100"
+                  variants={itemVariants}
+                >
+                  <div className="text-center p-4 bg-gray-50 rounded-lg hover:bg-emerald-50 transition-colors duration-300">
+                    <h4 className="font-bold text-emerald-700 mb-2">Vision</h4>
+                    <p className="text-sm text-gray-600">Sustainable economic growth through innovation</p>
+                  </div>
+                  
+                  <div className="text-center p-4 bg-gray-50 rounded-lg hover:bg-teal-50 transition-colors duration-300">
+                    <h4 className="font-bold text-teal-700 mb-2">Mission</h4>
+                    <p className="text-sm text-gray-600">Empowering workers and strengthening local economy</p>
+                  </div>
+                </motion.div>
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </div>
   );

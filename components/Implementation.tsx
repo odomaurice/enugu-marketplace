@@ -16,11 +16,11 @@ export default function ImplementationRoadmap() {
       <Tabs defaultValue="implementation" className="w-full">
         <TabsList className="grid w-full grid-cols-4 mb-8">
           <TabsTrigger value="implementation">
-            Implementation Phases
+            Implement 
           </TabsTrigger>
-          <TabsTrigger value="success">Success Factors</TabsTrigger>
-          <TabsTrigger value="monitoring">Monitoring & KPIs</TabsTrigger>
-          <TabsTrigger value="risk">Risk Mitigation</TabsTrigger>
+          <TabsTrigger value="success">Success</TabsTrigger>
+          <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
+          <TabsTrigger value="risk">Risk</TabsTrigger>
         </TabsList>
 
         <TabsContent value="implementation">

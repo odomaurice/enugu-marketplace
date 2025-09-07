@@ -6,6 +6,7 @@ import Hero from '@/components/Hero'
 import LeadershipProfile from '@/components/Overview'
 import ProductInstance from '@/components/product-instance'
 import Stats from '@/components/Stats'
+
 import React from 'react'
 
 const page = () => {
@@ -13,7 +14,9 @@ const page = () => {
     <div className=''>
       {/* <Header/> */}
       <Hero/>
-       <Stats/>
+
+      <Stats/>
+      
       <Features/>
        <LeadershipProfile/>
 

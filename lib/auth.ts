@@ -1,5 +1,6 @@
 import { getServerSession, NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { NextResponse } from "next/server";
 
 export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
@@ -184,5 +185,7 @@ export const authOptions: NextAuthOptions = {
 
 export async function getServerUser() {
   const session = await getServerSession(authOptions);
-  return session?.user;
+    return NextResponse.json(JSON.parse(JSON.stringify(session?.user || null)));
 }
+
+
