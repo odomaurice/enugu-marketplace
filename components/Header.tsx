@@ -76,13 +76,34 @@ const Header = () => {
   const toggleMenu = () => setMenu(!menu);
   const closeMenu = () => setMenu(false);
 
-  useEffect(() => {
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(setServerUser)
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
-  }, []);
+// useEffect(() => {
+//   fetch("/api/auth/session")
+//     .then(async (res) => {
+//       if (!res.ok) {
+//         throw new Error(`Session fetch failed: ${res.status}`);
+//       }
+
+//       // NextAuth may return 204 No Content if no session
+//       if (res.status === 204) {
+//         return null;
+//       }
+
+//       try {
+//         return await res.json();
+//       } catch {
+//         return null;
+//       }
+//     })
+//     .then((data) => {
+//       setServerUser(data);
+//       setIsLoading(false);
+//     })
+//     .catch((err) => {
+//       console.error("Session error:", err);
+//       setIsLoading(false);
+//     });
+// }, []);
+
 
   // Close menu when navigating
   useEffect(() => {
@@ -166,9 +187,19 @@ const user = clientSession?.user || serverUser;
       >
         <div className="flex justify-between items-center mx-4">
           <Link href="/" onClick={closeMenu} className="flex items-center">
-            <h1 className="font-poppins text-black font-bold text-[18px]">
-              ENUGU MARKETPLACE
+          
+            <Image
+              src={"/logo.png"}
+              alt="logo"
+              width={50}
+              height={50}
+              className="text-[20px] text-green-600"
+            />
+            <h1 className=" ml-2 font-bold text-[16px]">
+              Enugu <span className="text-[16px] text-emerald-700 ">Food Scheme</span>
             </h1>
+          
+            
           </Link>
 
           <button onClick={toggleMenu} className="p-2">
@@ -212,10 +243,10 @@ const user = clientSession?.user || serverUser;
               {status === "unauthenticated" && (
                 <Button
                   asChild
-                  className="w-full bg-green-700 rounded-full hover:bg-green-600"
+                  className="w-full bg-green-700 rounded-md py-[1.5rem] hover:bg-green-600"
                 >
                   <Link href="/employee-login" onClick={closeMenu}>
-                    Employee Login
+                    Login
                   </Link>
                 </Button>
               )}

@@ -18,18 +18,34 @@ export default function StatusCheckWrapper({ children }: { children: React.React
   const [hasCheckedStatus, setHasCheckedStatus] = useState(false);
 
 
-  useEffect(() => {
-    fetch("/api/auth/session")
-      .then((res) => res.json())
-      .then((data) => {
-        setServerUser(data);
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        console.error("Session error:", err);
-        setIsLoading(false);
-      });
-  }, []);
+useEffect(() => {
+  fetch("/api/auth/session")
+    .then(async (res) => {
+      if (!res.ok) {
+        throw new Error(`Session fetch failed: ${res.status}`);
+      }
+
+      // NextAuth may return 204 No Content if no session
+      if (res.status === 204) {
+        return null;
+      }
+
+      try {
+        return await res.json();
+      } catch {
+        return null;
+      }
+    })
+    .then((data) => {
+      setServerUser(data);
+      setIsLoading(false);
+    })
+    .catch((err) => {
+      console.error("Session error:", err);
+      setIsLoading(false);
+    });
+}, []);
+
 
   const user = clientSession?.user || serverUser;
 

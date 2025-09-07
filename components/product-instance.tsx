@@ -362,7 +362,7 @@ const ProductInstance = () => {
     <div className="container py-8">
       <TooltipProvider>
         {/* Compliance Status Banners - Only show for non-admin users */}
-        {!isAdmin && user && !complianceData && (
+        {!user && !isAdmin && user && !complianceData && (
           <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded">
             <div className="flex items-center">
               <AlertCircle className="h-5 w-5 mr-2" />
@@ -526,9 +526,9 @@ const ProductInstance = () => {
                       <div className="flex md:flex-row flex-col gap-2">
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="w-full md:w-1/2">
+                            <div className="w-full md:w-1/2  ">
                               <Button
-                                className="w-full bg-orange-700 hover:bg-orange-600 h-11 font-bold"
+                                className="w-full bg-orange-700 text-[14px] hover:bg-orange-600 h-11 font-bold"
                                 onClick={() => addToCart(product)}
                                 disabled={
                                   !isCartActionAllowed() ||
@@ -545,7 +545,7 @@ const ProductInstance = () => {
                                   </>
                                 ) : (
                                   <>
-                                    <ShoppingCart className="mr-2 h-4 w-4" />
+                                    {/* <ShoppingCart className=" h-4 w-4" /> */}
                                     ADD TO CART
                                   </>
                                 )}
@@ -568,7 +568,7 @@ const ProductInstance = () => {
                           className="md:w-1/2 w-full border-orange-500 text-orange-500 hover:bg-orange-50 h-11"
                         >
                           <Link href={`/products/${product.id}`}>
-                            <Eye className="mr-2 h-4 w-4" />
+                            {/* <Eye className="mr-2 h-4 w-4" /> */}
                             View Details
                           </Link>
                         </Button>
@@ -584,7 +584,7 @@ const ProductInstance = () => {
         <div className="text-center">
           <Button
             asChild
-            className="bg-orange-800 w-full md:max-w-lg py-4 hover:bg-orange-700 text-md"
+            className="bg-orange-800 w-full md:max-w-lg py-[1.7rem] hover:bg-orange-700 text-md"
           >
             <Link href="/products">View All Products</Link>
           </Button>
