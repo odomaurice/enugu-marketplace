@@ -7,7 +7,7 @@ import { AdminUsersTable } from "./UsersTable";
 export async function UsersDataFetcher() {
   const session = await getServerSession(authOptions);
   
-  if (!session?.user || session.user.role !== "admin") {
+  if (!session?.user || session.user.role !== "super_admin") {
     redirect("/auth/signin");
   }
 

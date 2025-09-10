@@ -22,7 +22,7 @@ export default async function AdminDashboard() {
     redirect(`/admin-login?callbackUrl=${encodeURIComponent('/admin-dashboard')}`);
   }
 
-  if (session.user.role !== 'admin') {
+  if (session.user.role !== 'super_admin') {
     redirect('/auth/error?error=Unauthorized');
   }
 
@@ -69,7 +69,7 @@ export default async function AdminDashboard() {
     .map(([name]) => name);
 
   return (
-    <div className="p-4">
+    <div className="p-4 mt-[60px]">
       <h1 className="text-2xl font-bold">Welcome to your dashboard, {session.user.name}.</h1>
       
       <div className="mt-8">

@@ -37,7 +37,7 @@ export default function AdminLogin() {
     setError(null);
     
     try {
-      const result = await signIn('admin', {
+      const result = await signIn('super_admin', {
         redirect: false,
         identifier: values.identifier,
         password: values.password,

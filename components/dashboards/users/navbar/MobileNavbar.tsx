@@ -19,7 +19,7 @@ const MobileNav = () => {
         width={200}
         height={200}
       /> */}
-      <h1 className="text-black font-bold">ENUGU MARKETPLACE</h1>
+      <h1 className="text-black font-bold">Enugu Food Scheme</h1>
       <GiHamburgerMenu
         className=" text-[30px] cursor-pointer"
         onClick={handleSideBar}

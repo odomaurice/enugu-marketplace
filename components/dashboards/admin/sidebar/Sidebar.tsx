@@ -88,13 +88,13 @@ const Sidebar = ({ dashboard }: SidebarProps) => {
       <div>
         <Link href="/" className="flex items-center">
           <h1 className="ml-2 text-black font-bold text-[18px]">
-            ENUGU MARKETPLACE
+            Enugu Food Scheme
           </h1>
         </Link>
       </div>
 
       {/* Dashboard Navigation */}
-      {dashboard === "admin" && <AdminSideBarComponent findpath={findpath} />}
+      {dashboard === "super_admin" && <AdminSideBarComponent findpath={findpath} />}
 
       {/* User Profile & Logout */}
       <div className="w-full h-[120px] bg-green-800 mt-16 flex items-end justify-center relative rounded-lg">

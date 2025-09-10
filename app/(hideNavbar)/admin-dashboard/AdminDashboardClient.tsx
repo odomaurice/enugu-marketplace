@@ -1,15 +1,13 @@
 "use client";
 import { Session } from "next-auth";
-import Sidebar from "@/components/dashboards/admin/sidebar/Sidebar";
-import MobileSidebar from "@/components/dashboards/admin/sidebar/MobileSidebar";
-import MobileNavbar from "@/components/dashboards/admin/navbar/MobileNavbar";
 import ConfirmLogout from "@/components/ConfirmLogout";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import MobileSideBar from "@/components/dashboards/admin/sidebar/MobileSidebar";
+import MobileNavbar from "@/components/dashboards/admin/navbar/MobileNavbar";
+import Sidebar from "@/components/dashboards/admin/sidebar/Sidebar";
 
-
-export default function AdminLayoutClient({
+export default function   AdminLayoutClient({
   children,
   session
 }: {
@@ -17,17 +15,18 @@ export default function AdminLayoutClient({
   session: Session;
 }) {
   return (
-    <div className="flex font-header ">
+    <div className="flex font-header">
       {/* Desktop Sidebar */}
-      <div className="hidden sm:block sm:flex-4 md:flex-2  text-black font-semibold py-2 h-screen sticky top-0 overflow-auto scrollbar-hide">
-        <Sidebar dashboard="admin"  />
+      <div className="hidden sm:block sm:flex-4 md:flex-2 bg-[#FFF] text-black font-semibold py-2 h-screen sticky top-0 overflow-auto scrollbar-hide">
+        <Sidebar dashboard="super_admin"  />
+        
       </div>
 
       {/* Main Content */}
-      <section className="flex-1 flex flex-col w-full  overflow-hidden">
+      <section className="flex-1 flex flex-col w-full overflow-hidden">
         {/* Mobile Sidebar */}
         <div className="sm:hidden">
-          <MobileSidebar dashboard="admin" session={session}  />
+          <MobileSideBar dashboard="super_admin" session={session}  />
         </div>
 
         {/* Navbar */}
@@ -39,7 +38,6 @@ export default function AdminLayoutClient({
         <main className="flex-1 overflow-y-auto p-4 md:p-1 scrollbar-hide bg-stone-100 relative">
           <ConfirmLogout />
           {children}
-          
           <ToastContainer position="top-right" autoClose={3000} />
         </main>
       </section>

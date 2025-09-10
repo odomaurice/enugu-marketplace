@@ -112,7 +112,7 @@ export function ProductsList({ token }: { token: string }) {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {products.map((product) => (
-              <Card key={product.id} className="hover:shadow-lg transition-shadow w-[400px]">
+              <Card key={product.id} className="hover:shadow-lg transition-shadow md:w-[300px] w-full">
                 <CardHeader className="p-0">
                   <div className="relative mt-6 h-48 w-full">
                     <Image

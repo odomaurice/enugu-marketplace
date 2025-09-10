@@ -186,7 +186,7 @@ const user = clientSession?.user || serverUser;
         }`}
       >
         <div className="flex justify-between items-center mx-4">
-          <Link href="/" onClick={closeMenu} className="flex items-center
+          <Link href="/" onClick={closeMenu} className="flex items-center">
           
             <Image
               src={"/logo.png"}
@@ -197,8 +197,7 @@ const user = clientSession?.user || serverUser;
             />
             <h1 className=" ml-2 font-bold text-[16px]">
               Enugu <span className="text-[16px] text-emerald-700 ">Food Scheme</span>
-
-            
+            </h1>
           
             
           </Link>
