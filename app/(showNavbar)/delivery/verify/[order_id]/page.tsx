@@ -1,4 +1,4 @@
-// app/delivery/verify/[order_id]/page.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -36,7 +36,8 @@ export default function DeliveryVerificationPage() {
     setIsLoading(true);
     try {
       const timestamp = new Date().getTime();
-      const response = await fetch(`${API_BASE_URL}/generate-qr-code?order_id=${orderId}&t=${timestamp}`, {
+      const response = await fetch(`${API_BASE_URL}/delivery_order?order_id=${orderId}&t=${timestamp}
+     `, {
         cache: 'no-cache',
         headers: {
           'Cache-Control': 'no-cache',
