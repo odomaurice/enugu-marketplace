@@ -43,6 +43,7 @@ export default async function AdminDashboard() {
   const users = usersResponse.status === 'fulfilled' ? usersResponse.value.data.data : [];
   const products = productsResponse.status === 'fulfilled' ? productsResponse.value.data.data : [];
   const orders = ordersResponse.status === 'fulfilled' ? ordersResponse.value.data.data : [];
+ 
 
   // Calculate metrics
   const totalUsers = users.length;
@@ -50,6 +51,7 @@ export default async function AdminDashboard() {
   const totalOrders = orders.length;
   const totalRevenue = orders.reduce((sum: number, order: any) => sum + order.totalAmount, 0);
   const pendingOrders = orders.filter((order: any) => order.orderStatus === 'PENDING').length;
+  const deliveredOrders = orders.filter((order: any) => order.orderStatus === 'DELIVERED').length;
   const activeUsers = users.filter((user: any) => user.orders?.length > 0).length;
 
   // Get top selling products
@@ -69,7 +71,7 @@ export default async function AdminDashboard() {
     .map(([name]) => name);
 
   return (
-    <div className="p-4 mt-[60px]">
+    <div className="p-4 mt-[60px] md:mt-[20px]">
       <h1 className="text-2xl font-bold">Welcome to your dashboard, {session.user.name}.</h1>
       
       <div className="mt-8">
@@ -150,9 +152,14 @@ export default async function AdminDashboard() {
             <p className="text-2xl font-bold mt-2">{pendingOrders}</p>
             <p className="text-sm text-gray-500 mt-1">{Math.round((pendingOrders / totalOrders) * 100)}% of total orders</p>
           </div>
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h3 className="font-medium text-gray-500">Delivered Orders</h3>
+            <p className="text-2xl font-bold mt-2">{deliveredOrders}</p>
+            <p className="text-sm text-gray-500 mt-1">{Math.round((deliveredOrders / totalOrders) * 100)}% of total orders</p>
+          </div>
 
-          {/* Top Products */}
-           <div className="bg-white p-6 rounded-lg shadow">
+         
+           {/* <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="font-medium text-gray-500">Top Products</h3>
             <ul className="mt-2 space-y-1">
               {topProducts.map((product, index) => (
@@ -162,7 +169,7 @@ export default async function AdminDashboard() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
         </div>
       </div>
 
