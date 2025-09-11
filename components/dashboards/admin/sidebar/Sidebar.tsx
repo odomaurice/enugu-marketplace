@@ -87,8 +87,15 @@ const Sidebar = ({ dashboard }: SidebarProps) => {
       {/* Logo */}
       <div>
         <Link href="/" className="flex items-center">
+        <Image
+                      src={"/logo.png"}
+                      alt="logo"
+                      width={50}
+                      height={50}
+                      className="text-[20px] text-green-600"
+                    />
           <h1 className="ml-2 text-black font-bold text-[18px]">
-            Enugu Food Scheme
+            Enugu Market Food Scheme
           </h1>
         </Link>
       </div>

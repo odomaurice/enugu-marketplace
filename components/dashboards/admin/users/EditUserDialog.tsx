@@ -29,6 +29,7 @@ export function EditUserDialog({ user, token, onSuccess }: EditUserDialogProps) 
     lastname: user.lastname,
     level: user.level,
     employee_id: user.employee_id,
+    verification_id: user.verification_id,
     government_entity: user.government_entity,
     phone: user.phone,
     salary_per_month: user.salary_per_month.toString(),
@@ -130,7 +131,7 @@ export function EditUserDialog({ user, token, onSuccess }: EditUserDialogProps) 
               />
             </div>
           </div>
-
+          <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="government_entity">Government Entity</Label>
             <Input
@@ -140,6 +141,17 @@ export function EditUserDialog({ user, token, onSuccess }: EditUserDialogProps) 
               onChange={handleChange}
               required
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="verification_id">Verification ID</Label>
+            <Input
+              id="verification_id"
+              name="verification_id"
+              value={formData.verification_id}
+              onChange={handleChange}
+              required
+            />
+          </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

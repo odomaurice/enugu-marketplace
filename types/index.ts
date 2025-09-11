@@ -47,6 +47,7 @@ export interface UserWithRelations {
   employee_id: string;
   government_entity: string;
   salary_per_month: number;
+  verification_id: string ;
   loan_unit: number;
   loan_amount_collected: number;
   is_address_set: boolean;

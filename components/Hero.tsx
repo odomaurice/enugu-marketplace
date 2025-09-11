@@ -117,7 +117,7 @@ export default function Hero() {
             className="text-3xl md:text-6xl font-bold text-gray-900 dark:text-white mb-4 leading-tight"
             variants={itemVariants}
           >
-            Food Loan Scheme for{" "} <br />
+            Food Scheme for{" "} <br />
             <motion.span 
               className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400"
               variants={itemVariants}
@@ -141,10 +141,10 @@ export default function Hero() {
           >
             <Button
               asChild
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-base px-8 py-6 rounded-xl shadow-lg hover:shadow-green-500/20 transition-all duration-300 transform hover:-translate-y-1"
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white text-base py-6 rounded-xl shadow-lg hover:shadow-green-500/20 transition-all duration-300 transform hover:-translate-y-1"
             >
-              <Link href="/executive-summary" className="flex items-center gap-2">
-                View Executive Summary 
+              <Link href="/employee-login" className="flex items-center gap-2">
+                Get Started 
                 <IoArrowForwardSharp className="group-hover:translate-x-1 transition-transform" />
               </Link>
             </Button>
@@ -153,8 +153,8 @@ export default function Hero() {
               asChild
               className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-base px-8 py-6 rounded-xl shadow-sm transition-all duration-300 transform hover:-translate-y-1"
             >
-              <Link href="/implementation">
-                Implementation Plan
+              <Link href="/employee-dashboard/products">
+                Start Shopping
               </Link>
             </Button>
           </motion.div>

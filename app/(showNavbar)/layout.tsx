@@ -4,12 +4,11 @@ import Providers from "@/providers/Providers";
 import Header from "@/components/Header";
 import StatusCheckWrapper from "@/components/StatusCheckWrapper";
 import { Suspense } from "react";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "Enugu Food Scheme",
   description: "Food Loan Scheme for Enugu State Workers",
-
   icons: {
     icon: "/favicon.ico",
   },
@@ -25,7 +24,7 @@ export default function RootLayout({
       <body suppressHydrationWarning className=" font-header">
         <Providers>
           <Header />
-          <Toaster/>
+          <Toaster position="top-right" richColors />
           <Suspense fallback={<div>Loading...</div>}>
             <StatusCheckWrapper>{children}</StatusCheckWrapper>
           </Suspense>

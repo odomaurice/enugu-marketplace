@@ -56,10 +56,10 @@ useEffect(() => {
         setShowconsentModal(true);
       }
 
-      if(user.status === "PENDING") {
-        toast.info("Your account is still pending. Please be patient while your account is approved.");
+      // if(user.status === "PENDING") {
+      //   toast.info("Your account is still pending. Please be patient while your account is approved.");
 
-      }
+      // }
       setHasCheckedStatus(true);
     }
   }, [sessionStatus, user, hasCheckedStatus, returnUrl]);

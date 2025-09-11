@@ -91,7 +91,7 @@ const ProductInstance = () => {
   const user = clientSession?.user || serverUser;
 
   // Check if user is admin
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "super_admin";
 
   // Fetch compliance data and wishlist items when user changes (only for non-admins)
   useEffect(() => {
@@ -301,11 +301,11 @@ const ProductInstance = () => {
           id: toastId,
           action: {
             label: "View Cart",
-            onClick: () => router.push("/cart"),
+            onClick: () => router.push("/employee-dashboard/cart"),
           },
         });
         // Redirect to cart page after 2 seconds (same as product detail page)
-        setTimeout(() => router.push("/cart"), 2000);
+        setTimeout(() => router.push("/employee-dashboard/cart"), 2000);
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to add to cart", {
@@ -567,7 +567,7 @@ const ProductInstance = () => {
                           variant="outline"
                           className="md:w-1/2 w-full border-orange-500 text-orange-500 hover:bg-orange-50 h-11"
                         >
-                          <Link href={`/products/${product.id}`}>
+                          <Link href={`/employee-dashboard/products/${product.id}`}>
                             {/* <Eye className="mr-2 h-4 w-4" /> */}
                             View Details
                           </Link>
@@ -586,7 +586,7 @@ const ProductInstance = () => {
             asChild
             className="bg-orange-800 w-full md:max-w-lg py-[1.7rem] hover:bg-orange-700 text-md"
           >
-            <Link href="/products">View All Products</Link>
+            <Link href="/employee-dashboard/products">View All Products</Link>
           </Button>
         </div>
 

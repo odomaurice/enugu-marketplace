@@ -1,7 +1,7 @@
 "use client";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
@@ -32,7 +32,7 @@ interface ProductDetails {
   basePrice: number;
   currency: string;
   isPerishable: boolean;
-  active: boolean; // Added active property for stock status
+  active: boolean;
   variants: any[];
   rating?: number;
   reviewCount?: number;
@@ -51,7 +51,7 @@ export default function ProductDetailPage({
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [showComplianceDialog, setShowComplianceDialog] = useState(false);
-  const [complianceData, setComplianceData] = useState<any>(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -67,51 +67,73 @@ export default function ProductDetailPage({
   }, []);
 
   const user = clientSession?.user || serverUser;
+  const isAdmin = user?.role === "super_admin";
 
-  // Check if user is admin
-  const isAdmin = user?.role === "admin";
+  // React Query for compliance data
+  const { data: complianceData, isLoading: isComplianceLoading } = useQuery({
+    queryKey: ["compliance", user?.token],
+    queryFn: async () => {
+      if (!user?.token || isAdmin) return null;
+      
+      try {
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/get-compliance`,
+          {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }
+        );
+        return response.data.data;
+      } catch (error) {
+        console.error("Failed to fetch compliance data:", error);
+        return null;
+      }
+    },
+    enabled: !!user?.token && !isAdmin,
+  });
 
+  // React Query for wishlist data
+  const { data: wishlistData } = useQuery({
+    queryKey: ["wishlist", user?.token],
+    queryFn: async () => {
+      if (!user?.token || isAdmin) return [];
+      
+      try {
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/wishlist`,
+          {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }
+        );
+        return response.data.data;
+      } catch (error) {
+        console.error("Failed to fetch wishlist:", error);
+        return [];
+      }
+    },
+    enabled: !!user?.token && !isAdmin,
+  });
+
+  // Update wishlist status based on fetched data
   useEffect(() => {
-    if (user?.token && !isAdmin) {
-      // Fetch compliance data from endpoint instead of session
-      axios
-        .get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/get-compliance`, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        })
-        .then((response) => {
-          setComplianceData(response.data.data);
-        })
-        .catch((error) => {
-          console.error("Failed to fetch compliance data:", error);
-          // If no compliance data exists, set to null
-          setComplianceData(null);
-        });
-
-      // Check wishlist status
-      axios
-        .get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/wishlist`, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        })
-        .then((res) => {
-          const isWishlisted = res.data.data.some(
-            (item: any) => item.productId === params.id
-          );
-          setIsInWishlist(isWishlisted);
-        });
+    if (wishlistData) {
+      const isWishlisted = wishlistData.some(
+        (item: any) => item.productId === params.id
+      );
+      setIsInWishlist(isWishlisted);
     }
-  }, [user, params.id, isAdmin]);
+  }, [wishlistData, params.id]);
 
+  // React Query for product data
   const { data: product } = useQuery({
     queryKey: ["product", params.id],
     queryFn: async () => {
       const res = await axios.get(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/product?product_id=${params.id}`
       );
-      // Add mock ratings to match product-1.png
       const productWithRating = {
         ...res.data.data,
-        rating: 5, // All products have 5 stars in the image
-        reviewCount: 2, // All products have 2 reviews in the image
+        rating: 5,
+        reviewCount: 2,
       };
       return productWithRating as ProductDetails;
     },
@@ -120,17 +142,14 @@ export default function ProductDetailPage({
   const getComplianceStatusMessage = () => {
     if (isAdmin) return "Admin users cannot add items to cart";
     if (!user) return "Please login to access this feature";
-    if (!complianceData)
-      return "Submit compliance form to enable cart features";
-    if (complianceData?.status === "PENDING")
-      return "Compliance pending admin approval";
-    if (complianceData?.status === "DENIED")
-      return "Your compliance form was rejected. Please submit a new one.";
+    if (!complianceData) return "Submit compliance form to enable cart features";
+    if (complianceData?.status === "PENDING") return "Compliance pending admin approval";
+    if (complianceData?.status === "DENIED") return "Your compliance form was rejected. Please submit a new one.";
     return "";
   };
 
   const isCartActionAllowed = () => {
-    if (isAdmin) return false; // Admins cannot add to cart
+    if (isAdmin) return false;
     if (!user) return false;
     if (!complianceData) return false;
     if (complianceData?.status === "PENDING") return false;
@@ -165,26 +184,22 @@ export default function ProductDetailPage({
       return;
     }
 
+    if (complianceData?.status === "DENIED") {
+      setShowComplianceDialog(true);
+      toast.error("Your compliance form was rejected. Please submit a new one.");
+      return;
+    }
+
     if (complianceData?.status === "PENDING") {
       toast.error("Your compliance form is pending admin approval");
       return;
     }
 
-    if (complianceData?.status === "DENIED") {
-      setShowComplianceDialog(true);
-      toast.error(
-        "Your compliance form was rejected. Please submit a new one."
-      );
-      return;
-    }
-
     const payload = { productId: params.id, quantity };
-    let toastId: string | number | undefined;
 
     try {
       setIsAddingToCart(true);
-      toastId = toast.loading("Adding to cart...");
-
+      
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/cart/add-to-cart`,
         payload,
@@ -197,19 +212,11 @@ export default function ProductDetailPage({
       );
 
       if (response.status === 200 || response.status === 201) {
-        toast.success("Item added to cart!", {
-          id: toastId,
-          action: {
-            label: "View Cart",
-            onClick: () => router.push("/cart"),
-          },
-        });
-        setTimeout(() => router.push("/cart"), 2000);
+        toast.success("Item added to cart!");
+        setTimeout(() => router.push("/employee-dashboard/cart"), 2000);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to add to cart", {
-        id: toastId,
-      });
+      toast.error(error.response?.data?.message || "Failed to add to cart");
     } finally {
       setIsAddingToCart(false);
     }
@@ -231,22 +238,14 @@ export default function ProductDetailPage({
       return;
     }
 
-    if (!complianceData) {
+    if (complianceData?.status === "DENIED") {
       setShowComplianceDialog(true);
-      toast.error("Please submit your compliance form first");
+      toast.error("Your compliance form was rejected. Please submit a new one.");
       return;
     }
 
     if (complianceData?.status === "PENDING") {
       toast.error("Your compliance form is pending admin approval");
-      return;
-    }
-
-    if (complianceData?.status === "DENIED") {
-      setShowComplianceDialog(true);
-      toast.error(
-        "Your compliance form was rejected. Please submit a new one."
-      );
       return;
     }
 
@@ -285,6 +284,9 @@ export default function ProductDetailPage({
       toast.success(
         isInWishlist ? "Removed from wishlist" : "Added to wishlist!"
       );
+      
+      // Invalidate wishlist query to refetch
+      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
     } catch (error) {
       toast.error("Failed to update wishlist");
     }
@@ -293,28 +295,22 @@ export default function ProductDetailPage({
   const handleComplianceUploadSuccess = () => {
     setShowComplianceDialog(false);
     toast.success("Compliance form submitted successfully!");
-    // Refetch compliance data after successful upload
-    if (user?.token) {
-      axios
-        .get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/get-compliance`, {
-          headers: { Authorization: `Bearer ${user.token}` },
-        })
-        .then((response) => {
-          setComplianceData(response.data.data);
-          toast.success("Compliance form submitted successfully!");
-        })
-        .catch((error) => {
-          console.error("Failed to fetch compliance data:", error);
-          setComplianceData(null);
-        });
-    }
+    
+    // CRITICAL FIX: Immediately update the UI to show pending status
+    // This prevents the "DENIED" banner from showing while waiting for API refetch
+    // queryClient.setQueryData(["compliance", user?.token], { 
+    //   status: "PENDING", 
+    //   is_compliance_submitted: true 
+    // });
+    
+    // Then trigger a refetch to get the actual server state
+    queryClient.invalidateQueries({ queryKey: ["compliance"] });
   };
 
   const incrementQuantity = () => setQuantity((prev) => prev + 1);
   const decrementQuantity = () =>
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
-  // Function to render star ratings
   const renderStars = (rating: number) => {
     return Array(5)
       .fill(0)
@@ -329,7 +325,7 @@ export default function ProductDetailPage({
       ));
   };
 
-  if (status === "loading")
+  if (status === "loading" || isComplianceLoading)
     return <div className="container py-8">Loading...</div>;
 
   return (
@@ -345,12 +341,20 @@ export default function ProductDetailPage({
           </div>
         )}
 
-        {/* Compliance Status Banners - Only show for non-admin users */}
-        {!isAdmin && user && !complianceData && (
+        {/* Compliance Status Banners */}
+        {!isAdmin && user && (!complianceData || complianceData?.is_compliance_submitted === false) && (
           <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded">
             <div className="flex items-center">
               <AlertCircle className="h-5 w-5 mr-2" />
               <p>Please submit your compliance form to add items to cart.</p>
+              <Button
+                onClick={() => setShowComplianceDialog(true)}
+                className="ml-4 bg-yellow-600 hover:bg-yellow-700"
+                size="sm"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Submit Compliance
+              </Button>
             </div>
           </div>
         )}
@@ -373,9 +377,7 @@ export default function ProductDetailPage({
               <AlertCircle className="h-5 w-5 mr-2" />
               <div>
                 <p className="font-semibold">Compliance Form Rejected</p>
-                <p>
-                  Your compliance form was rejected. Please submit a new one.
-                </p>
+                <p>Your compliance form was rejected. Please submit a new one.</p>
                 <Button
                   onClick={() => setShowComplianceDialog(true)}
                   className="mt-2 bg-red-600 hover:bg-red-700"
@@ -399,7 +401,6 @@ export default function ProductDetailPage({
                 className="object-contain"
                 priority
               />
-              {/* Stock status badge */}
               {product?.active && (
                 <div className="absolute top-3 left-3 bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
                   In Stock
@@ -411,7 +412,6 @@ export default function ProductDetailPage({
           <div>
             <h1 className="text-3xl font-bold mb-2">{product?.name}</h1>
 
-            {/* Star rating - matches product-1.png */}
             <div className="flex items-center mb-3">
               <div className="flex mr-1">
                 {renderStars(product?.rating || 5)}
@@ -466,7 +466,6 @@ export default function ProductDetailPage({
               </div>
             </div>
 
-            {/* Add to Cart Button with Tooltip */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="w-full">
@@ -502,7 +501,6 @@ export default function ProductDetailPage({
               )}
             </Tooltip>
 
-            {/* Wishlist Button with Tooltip */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="w-full mt-3">
@@ -536,7 +534,6 @@ export default function ProductDetailPage({
               )}
             </Tooltip>
 
-            {/* Additional info for disabled state */}
             {(!isCartActionAllowed() || isAdmin) && user && (
               <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
                 <h3 className="font-semibold text-sm mb-2 flex items-center">
@@ -575,16 +572,12 @@ export default function ProductDetailPage({
           </div>
         </div>
 
-        {/* Only show compliance upload for non-admin users */}
         {!isAdmin && (
           <ConsentUpload
             isOpen={showComplianceDialog}
             onClose={() => setShowComplianceDialog(false)}
             onUploadSuccess={handleComplianceUploadSuccess}
             token={user?.token || ""}
-            returnUrl={
-              typeof window !== "undefined" ? window.location.pathname : ""
-            }
           />
         )}
       </TooltipProvider>
