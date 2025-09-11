@@ -24,7 +24,7 @@ export default function RootLayout({
       <body suppressHydrationWarning className=" font-header">
         <Providers>
          
-          <Toaster position="top-right" richColors />
+          <Toaster position="top-right" richColors style={{ zIndex: 10000 }} />
           <Suspense fallback={<div>Loading...</div>}>
             <StatusCheckWrapper>{children}</StatusCheckWrapper>
           </Suspense>

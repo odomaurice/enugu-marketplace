@@ -54,7 +54,7 @@ export function ComplianceCard({
 
   return (
     <>
-      <Card className="hover:shadow-lg transition-shadow">
+      <Card className="hover:shadow-lg w-[310px]   transition-shadow">
         <CardHeader>
           <div className="flex justify-between items-start">
             <CardTitle className="text-lg">
@@ -67,8 +67,8 @@ export function ComplianceCard({
         </CardHeader>
 
         <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="space-y-2">
+            <div className="grid grid-cols-1 gap-2 text-sm">
               <div>
                 <p className="font-semibold">Employee ID</p>
                 <p>{consent.user.employee_id}</p>
@@ -126,20 +126,22 @@ export function ComplianceCard({
             <div className="flex justify-between items-center">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => onView(consent)}
+                className="text-[12px] w-full "
               >
                 View Details
               </Button>
 
-              {consent.status === "PENDING" && (
+              
+            </div>
+            {consent.status === "PENDING" && (
                 <div className="flex gap-2">
                   <Button
                     variant="default"
-                    size="sm"
+                   
                     onClick={() => onApprove(consent.id)}
                     disabled={isUpdating}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 text-[14px] hover:bg-green-700"
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
                     Approve
@@ -155,7 +157,6 @@ export function ComplianceCard({
                   </Button>
                 </div>
               )}
-            </div>
           </div>
         </CardContent>
       </Card>

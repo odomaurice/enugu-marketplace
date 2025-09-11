@@ -25,6 +25,7 @@ export function CreateUserDialog({ token }: { token: string }) {
     level: "",
     employee_id: "",
     government_entity: "",
+    verification_id: "",
     phone: "",
     salary_per_month: "",
   });
@@ -122,7 +123,19 @@ export function CreateUserDialog({ token }: { token: string }) {
                 required
               />
             </div>
+           
           </div>
+            <div className="grid grid-cols-2 gap-4">
+           <div className="space-y-2">
+              <Label htmlFor="verification_id">Verification ID</Label>
+              <Input
+                id="verification_id"
+                name="verification_id"
+                value={formData.verification_id}
+                onChange={handleChange}
+                required
+              />
+            </div>
 
           <div className="space-y-2">
             <Label htmlFor="government_entity">Government Entity</Label>
@@ -133,6 +146,7 @@ export function CreateUserDialog({ token }: { token: string }) {
               onChange={handleChange}
               required
             />
+          </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

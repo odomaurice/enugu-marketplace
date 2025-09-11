@@ -150,7 +150,7 @@ export function CreateProductDialog({ token, onSuccess }: { token: string; onSuc
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Create New Product</Button>
+        <Button className='bg-green-700 hover:bg-green-600'>Create New Product</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] font-header">
         <ScrollArea className="h-[400px] w-full ">
@@ -245,10 +245,17 @@ export function CreateProductDialog({ token, onSuccess }: { token: string; onSuc
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="KG">Kilogram (KG)</SelectItem>
-                  <SelectItem value="G">Gram (G)</SelectItem>
-                  <SelectItem value="L">Liter (L)</SelectItem>
+                  <SelectItem value="GRAM">Gram (G)</SelectItem>
+                  <SelectItem value="LITER">Liter (L)</SelectItem>
                   <SelectItem value="ML">Milliliter (ML)</SelectItem>
-                  <SelectItem value="PC">Piece (PC)</SelectItem>
+                  <SelectItem value="PIECES">Piece (PC)</SelectItem>
+                  <SelectItem value="PACK">PACK(S)</SelectItem>
+                  <SelectItem value="BOTTLE">Bottle</SelectItem>
+                  <SelectItem value="CAN">Can</SelectItem>
+                  <SelectItem value="JAR">Jar</SelectItem>
+                  <SelectItem value="BOX">Box</SelectItem>
+                  <SelectItem value="BAG">Bag</SelectItem>
+                  <SelectItem value="PAINTER">Painter</SelectItem>
                 </SelectContent>
               </Select>
             </div>

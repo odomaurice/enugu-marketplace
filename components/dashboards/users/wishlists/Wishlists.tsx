@@ -182,7 +182,7 @@ const WishlistPage = () => {
         <div className="text-center py-12">
           <p className="text-lg mb-4">Your wishlist is empty</p>
           <Button asChild>
-            <Link href="/products">Browse Products</Link>
+            <Link href="/employee-dashboard/products">Browse Products</Link>
           </Button>
         </div>
       ) : (
@@ -272,7 +272,7 @@ const WishlistPage = () => {
                       variant="outline" 
                       className="flex-1"
                     >
-                      <Link href={`/products/${product.id}`}>
+                      <Link href={`/employee-dashboard/products/${product.id}`}>
                         View Details
                       </Link>
                     </Button>
