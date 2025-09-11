@@ -20,6 +20,11 @@ const columns: ColumnDef<UserWithRelations>[] = [
     cell: ({ row }) => <div className="font-medium">{row.getValue("employee_id") || "N/A"}</div>,
   },
   {
+    accessorKey: "verification_id",
+    header: "Verification ID",
+    cell: ({ row }) => <div className="font-medium">{row.getValue("verification_id") || "N/A"}</div>,
+  },
+  {
     accessorFn: (row) => `${row.firstname || ''} ${row.lastname || ''}`.trim(),
     header: "Name",
     cell: ({ row }) => {

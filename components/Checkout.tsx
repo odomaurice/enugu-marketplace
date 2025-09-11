@@ -176,7 +176,7 @@ export default function CheckoutPage() {
     },
     onSuccess: () => {
       toast.success('Order placed successfully!');
-      router.push('/order-confirmation');
+      router.push('/employee-dashboard/order-confirmation');
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Failed to place order');
@@ -426,7 +426,7 @@ export default function CheckoutPage() {
                 <div className="text-center py-8">
                   <p className="text-lg mb-4">Your cart is empty</p>
                   <Button asChild>
-                    <Link href="/products">Browse Products</Link>
+                    <Link href="/employee-dashboard/products">Browse Products</Link>
                   </Button>
                 </div>
               )}

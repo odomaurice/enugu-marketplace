@@ -52,7 +52,7 @@ export function LoanStats({
       {/* Loan Unit */}
       <div className="bg-white p-6 flex justify-between rounded-lg shadow">
         <div>
-          <h3 className="font-medium text-md">Loan Unit</h3>
+          <h3 className="font-medium text-md">Purchasing Unit</h3>
           <p className="text-xl text-gray-900 font-bold mt-2">
             {formatCurrency(loanUnit)}
           </p>
@@ -67,7 +67,7 @@ export function LoanStats({
       {/* Loan Taken */}
       <div className="bg-white p-6 flex justify-between rounded-lg shadow">
         <div>
-          <h3 className="font-medium text-md">Loan Taken</h3>
+          <h3 className="font-medium text-md">Purchasing Unit Spent</h3>
           <p className="text-xl text-gray-900 font-bold mt-2">
             {formatCurrency(loanTaken)}
           </p>

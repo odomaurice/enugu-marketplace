@@ -11,13 +11,13 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Image from "next/image";
 
-const navLinks = [
-  // { name: "Home", href: "/" },
-      { name: "Products", href: "/products" },
-  { name: "Executive Summary", href: "/executive-summary" },
-  { name: "Benefits", href: "/benefits" },
-    { name: "Implementation", href: "/implementation" },
-];
+// const navLinks = [
+//   // { name: "Home", href: "/" },
+//       { name: "Products", href: "/products" },
+//   { name: "Executive Summary", href: "/executive-summary" },
+//   { name: "Benefits", href: "/benefits" },
+//     { name: "Implementation", href: "/implementation" },
+// ];
 
 function CartPreview({ token }: { token?: string }) {
   const { data: cartResponse, error } = useQuery({
@@ -137,14 +137,14 @@ const user = clientSession?.user || serverUser;
               height={50}
               className="text-[50px] text-green-600"
             />
-            <h1 className=" ml-2 font-bold text-[27px]">
-              Enugu <span className="text-[25px] text-emerald-700 ">Food Scheme</span>
+            <h1 className=" ml-2 font-bold text-[23px]">
+              Enugu Market <span className="text-[23px] text-emerald-700 ">Food Scheme</span>
             </h1>
           </Link>
         </div>
 
         <div className="flex items-center gap-6 space-x-3 h-full">
-          <nav className="flex gap-8 font-header xl:gap-[50px] sm:text-[13px] md:text-[13px]">
+          {/* <nav className="flex gap-8 font-header xl:gap-[50px] sm:text-[13px] md:text-[13px]">
             {navLinks.map((link) => (
               <Link
                 href={link.href}
@@ -158,7 +158,7 @@ const user = clientSession?.user || serverUser;
                 {link.name}
               </Link>
             ))}
-          </nav>
+          </nav> */}
           <div className="flex items-center gap-4">
             {status === "authenticated" && (
               <>
@@ -196,7 +196,7 @@ const user = clientSession?.user || serverUser;
               className="text-[20px] text-green-600"
             />
             <h1 className=" ml-2 font-bold text-[16px]">
-              Enugu <span className="text-[16px] text-emerald-700 ">Food Scheme</span>
+              Enugu Market <span className="text-[16px] text-emerald-700 ">Food Scheme</span>
             </h1>
           
             
@@ -213,7 +213,7 @@ const user = clientSession?.user || serverUser;
 
         {menu && (
           <div className="my-4 mx-4 animate-in slide-in-from-right">
-            <nav className="flex flex-col gap-4 mt-4">
+            {/* <nav className="flex flex-col gap-4 mt-4">
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
@@ -228,7 +228,7 @@ const user = clientSession?.user || serverUser;
                   {link.name}
                 </Link>
               ))}
-            </nav>
+            </nav> */}
 
             <div className="flex flex-col gap-4 mt-4">
               {status === "authenticated" && (

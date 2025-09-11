@@ -1,14 +1,16 @@
 'use client';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Truck, HelpCircle } from 'lucide-react';
+import { CheckCircle, Clock, Truck, HelpCircle, Download, QrCode } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSession } from 'next-auth/react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 interface Order {
   id: string;
@@ -32,12 +34,22 @@ interface Order {
       isPerishable: boolean;
     };
   }>;
+  user?: {
+    id: string;
+    firstname: string;
+    lastname: string;
+    email: string;
+    phone: string;
+  };
 }
 
 export default function OrderConfirmationPage() {
   const { data: clientSession, status } = useSession();
   const [serverUser, setServerUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -72,8 +84,61 @@ export default function OrderConfirmationPage() {
         description: `Your order #${mostRecentOrder.id.split('-')[0]} has been confirmed.`,
         duration: 5000,
       });
+      
+      // Generate QR code for the order
+      generateQRCode(mostRecentOrder.id);
     }
   }, [mostRecentOrder, isLoading, isError]);
+
+const generateQRCode = async (orderId: string) => {
+  try {
+    // Create QR code that points to your frontend delivery verification page
+    const qrContent = `${window.location.origin}/delivery/verify/${orderId}`;
+    
+    // Use a QR code generation service (you can also use a client-side library)
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrContent)}`;
+    
+    setQrCodeUrl(qrCodeUrl);
+  } catch (error) {
+    console.error("Failed to generate QR code:", error);
+    // Fallback: create a simple data URL QR code
+    const qrContent = `${window.location.origin}/delivery/verify/${orderId}`;
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrContent)}`;
+    setQrCodeUrl(qrCodeUrl);
+  }
+};
+
+  const exportToPDF = async () => {
+    if (!contentRef.current) return;
+    
+    setIsGeneratingPDF(true);
+    try {
+      const canvas = await html2canvas(contentRef.current, {
+        scale: 2, // Higher quality
+        useCORS: true,
+        logging: false,
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      
+      pdf.addImage(imgData, 'PNG', imgX, 0, imgWidth * ratio, imgHeight * ratio);
+      pdf.save(`order-confirmation-${mostRecentOrder?.id.split('-')[0]}.pdf`);
+      
+      toast.success('PDF exported successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to export PDF');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -111,7 +176,7 @@ export default function OrderConfirmationPage() {
           </p>
           <div className="flex gap-4 justify-center">
             <Button asChild>
-              <Link href="/products">Browse Products</Link>
+              <Link href="/employee-dashboard/products">Browse Products</Link>
             </Button>
           </div>
         </div>
@@ -139,7 +204,20 @@ export default function OrderConfirmationPage() {
 
   return (
     <div className="container py-12">
-      <div className="max-w-4xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-md overflow-hidden">
+      {/* Export Button */}
+      <div className="flex justify-end mb-6">
+        <Button 
+          onClick={exportToPDF} 
+          disabled={isGeneratingPDF}
+          className="flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          {isGeneratingPDF ? 'Exporting...' : 'Export as PDF'}
+        </Button>
+      </div>
+
+      {/* Content to be exported */}
+      <div ref={contentRef} className="max-w-4xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-md overflow-hidden">
         {/* Header Section */}
         <div className="bg-green-50 dark:bg-green-900/20 p-6 text-center">
           <div className="flex justify-center mb-4">
@@ -170,6 +248,34 @@ export default function OrderConfirmationPage() {
                 {formatCurrency(mostRecentOrder.totalAmount, mostRecentOrder.currency)}
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* QR Code Section */}
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="font-medium text-gray-900 dark:text-white mb-4 text-center">
+            Delivery QR Code
+          </h3>
+          <div className="text-center">
+            {qrCodeUrl ? (
+              <div className="inline-block border rounded-lg p-4">
+                <img 
+                  src={qrCodeUrl} 
+                  alt="Delivery QR Code" 
+                  className="w-48 h-48 mx-auto"
+                />
+                <p className="text-sm text-gray-500 mt-2">
+                  Present this QR code to the delivery agent for verification
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-48 bg-gray-100 rounded-lg">
+                <div className="text-center">
+                  <QrCode className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-500">QR Code loading...</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -263,11 +369,39 @@ export default function OrderConfirmationPage() {
           </div>
         </div>
 
+        {/* Delivery Instructions */}
+        <div className="p-6 bg-blue-50 dark:bg-blue-900/20 border-t border-gray-200 dark:border-gray-700">
+          <h3 className="font-medium text-gray-900 dark:text-white mb-2">Delivery Instructions</h3>
+          <ol className="list-decimal list-inside space-y-1 text-sm text-gray-600 dark:text-gray-300">
+            <li>Bring this confirmation with you on delivery day</li>
+            <li>Show the QR code to the delivery agent for scanning</li>
+            <li>The agent will verify your identity and confirm delivery</li>
+            <li>You may receive an OTP for final verification</li>
+          </ol>
+        </div>
+
+        {/* Customer Information */}
+        {mostRecentOrder.user && (
+          <div className="p-6 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="font-medium text-gray-900 dark:text-white mb-2">Customer Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <p><strong>Name:</strong> {mostRecentOrder.user.firstname} {mostRecentOrder.user.lastname}</p>
+                <p><strong>Email:</strong> {mostRecentOrder.user.email}</p>
+              </div>
+              <div>
+                <p><strong>Phone:</strong> {mostRecentOrder.user.phone}</p>
+                <p><strong>Order Status:</strong> {mostRecentOrder.orderStatus}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="p-6 bg-gray-50 dark:bg-gray-800/50">
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Button asChild className="bg-primary hover:bg-primary/90">
-              <Link href="/products">
+              <Link href="/employee-dashboard/products">
                 Continue Shopping
               </Link>
             </Button>

@@ -410,8 +410,8 @@ export default function ProductsPage() {
                             asChild
                             className="w-full md:w-1/2 bg-orange-700 hover:bg-orange-600 h-11 font-bold"
                           >
-                            <Link href={`/products/${product.id}`}>
-                              <Eye className="mr-2 h-4 w-4" />
+                            <Link href={`/employee-dashboard/products/${product.id}`}>
+                              {/* <Eye className="mr-2 h-4 w-4" /> */}
                               View Details
                             </Link>
                           </Button>
@@ -424,12 +424,12 @@ export default function ProductsPage() {
                           >
                             {wishlistItems.includes(product.id) ? (
                               <>
-                                <HeartOff className="mr-2 h-4 w-4" />
+                                {/* <HeartOff className="mr-2 h-4 w-4" /> */}
                                 Remove from Wishlist
                               </>
                             ) : (
                               <>
-                                <Heart className="mr-2 h-4 w-4" />
+                                {/* <Heart className="mr-2 h-4 w-4" /> */}
                                 Add to Wishlist
                               </>
                             )}

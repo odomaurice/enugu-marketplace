@@ -3,7 +3,7 @@ import { GrMapLocation, GrTransaction } from "react-icons/gr";
 import { RiHome5Line } from "react-icons/ri";
 import { FaOpencart } from "react-icons/fa";
 import { TbReorder } from "react-icons/tb";
-import { MdOutlineSettings } from "react-icons/md";
+import { MdOutlineProductionQuantityLimits, MdOutlineSettings } from "react-icons/md";
 
 export interface UserSideBarType {
     path: string;
@@ -15,11 +15,16 @@ export interface UserSideBarType {
 export const UserSideBar: UserSideBarType[] = [
     { path: "", name: "Dashboard", icon: RiHome5Line },
     { 
+      path: "products", 
+      name: "Products", 
+      icon: MdOutlineProductionQuantityLimits
+    },
+    { 
       path: "wishlists", 
       name: "Wishlist", 
       icon: FaOpencart
     },
     { path: "orders", name: "Orders", icon: TbReorder },
      { path: "addresses", name: "Address", icon: GrMapLocation },
-     { path: "user-settings", name: "Settings", icon: MdOutlineSettings },
+    //  { path: "user-settings", name: "Settings", icon: MdOutlineSettings },
 ];

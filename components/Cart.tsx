@@ -254,7 +254,7 @@ const CartPage = () => {
         <div className="text-center py-12">
           <p className="text-lg mb-4">Your cart is empty</p>
           <Button asChild>
-            <Link href="/products">Browse Products</Link>
+            <Link href="/employee-dashboard/products">Browse Products</Link>
           </Button>
         </div>
       ) : (
@@ -421,7 +421,7 @@ const CartPage = () => {
                   <Link
                     href={
                       user
-                        ? "/checkout"
+                        ? "/employee-dashboard/checkout"
                         : `/employee-login?returnUrl=${encodeURIComponent("/checkout")}`
                     }
                   >

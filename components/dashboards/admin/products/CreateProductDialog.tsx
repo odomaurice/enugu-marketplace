@@ -45,7 +45,7 @@ export function CreateProductDialog({ token, onSuccess }: { token: string; onSuc
     brand: '',
     isPerishable: 'true',
     shelfLifeDays: '',
-    unit: 'KG',
+    unit: 'KG || GRAM || LITER || ML || PIECE || PACK || BOTTLE || CAN || JAR || BOX || BAG || PAINTER',
     packageType: 'Bag',
     active: 'true',
     categoryId: '',
