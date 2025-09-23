@@ -13,7 +13,7 @@ const page = () => {
   return (
     <div className=''>
       {/* <Header/> */}
-      <Hero/>
+      {/* <Hero/>
 
       <Stats/>
       
@@ -21,10 +21,10 @@ const page = () => {
        <LeadershipProfile/>
 
 
-      <BenefitsSection/>
+      <BenefitsSection/> */}
       
       <ProductInstance/>
-      <FAQ/>
+      {/* <FAQ/> */}
       <Footer/>
     </div>
   )

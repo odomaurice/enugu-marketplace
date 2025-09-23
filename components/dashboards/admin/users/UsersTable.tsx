@@ -64,7 +64,7 @@ const columns: ColumnDef<UserWithRelations>[] = [
   },
   {
     accessorKey: "loan_unit",
-    header: "Loan Unit (₦)",
+    header: "Purchasing Unit (₦)",
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue("loan_unit") || "0");
       return (
@@ -79,7 +79,7 @@ const columns: ColumnDef<UserWithRelations>[] = [
   },
   {
     accessorKey: "loan_amount_collected",
-    header: "Loan Collected (₦)",
+    header: "Purchasing Unit Taken (₦)",
     cell: ({ row }) => {
       const amount = parseFloat(row.getValue("loan_amount_collected") || "0");
       return (

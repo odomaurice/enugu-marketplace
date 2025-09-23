@@ -70,9 +70,9 @@ export function ExportLoansDialog({ token }: ExportLoansDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="flex font-header bg-orange-700 hover:bg-orange-600 text-white items-center gap-2">
+        <Button variant="outline" className="flex font-header bg-green-700 hover:bg-green-600 text-white items-center gap-2">
           <Download className="h-4 w-4" />
-          Export Loans
+          Export Internal Orders
         </Button>
       </DialogTrigger>
       <DialogContent className="font-header">

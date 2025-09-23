@@ -157,7 +157,7 @@ export function OrdersList() {
           </p>
           <div className="mt-6">
             <Button asChild>
-              <Link href="/products">Browse Products</Link>
+              <Link href="/employee-dashboard/products">Browse Products</Link>
             </Button>
           </div>
         </div>

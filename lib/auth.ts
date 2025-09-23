@@ -17,12 +17,12 @@ export const authOptions: NextAuthOptions = {
     signOut: '/',
     error: '/auth/error',
     verifyRequest: '/auth/verify-otp',
-    newUser: '/auth/new-user'
+    // newUser: '/auth/new-user'
   },
 
   providers: [
     CredentialsProvider({
-      id: "super_admin",
+      id: "admin_login",
       name: "Admin",
       credentials: {
         identifier: { label: "Email", type: "email" },
@@ -47,31 +47,29 @@ export const authOptions: NextAuthOptions = {
 
           const data = await response.json();
           
-          console.log('Admin login API response:', data); // Debug log
+          console.log('Admin login API response:', data);
           
-          // Check if the response indicates success
           if (!response.ok || !data.success) {
             throw new Error(data.message || 'Login failed');
           }
 
-          // Extract admin data from the token since it seems to be encoded there
+          // Extract admin data from the token
           let adminData: any = null;
           
           if (data.token) {
             try {
-              // Decode the JWT token to get the admin data
               const decoded: any = jwt.decode(data.token);
               console.log('Decoded JWT token:', decoded);
               
               if (decoded && decoded.admin) {
-                adminData = decoded.super_admin;
+                adminData = decoded.admin;
               }
             } catch (decodeError) {
               console.error('Error decoding JWT token:', decodeError);
             }
           }
 
-          // Fallback to direct data extraction if token decoding fails
+          // Fallback to direct data extraction
           if (!adminData) {
             adminData = data.admin || data.super_admin || data.data;
           }
@@ -80,21 +78,109 @@ export const authOptions: NextAuthOptions = {
             throw new Error('No admin data received');
           }
 
-          console.log('Extracted admin data:', adminData); // Debug log
+          console.log('Extracted admin data:', adminData);
 
-          // Return the user object that will be stored in the session
+          // Determine the role based on the response
+          const role = adminData.role === 'fulfillment_officer' ? 'fulfillment_officer' : 'super_admin';
+
+          // Return the user object
           return {
             id: adminData.id?.toString(),
             userId: adminData.id?.toString(),
             name: `${adminData.firstname || adminData.firstName || adminData.firtname || ''} ${adminData.lastname || adminData.lastName || ''}`.trim(),
             email: adminData.email || adminData.mail,
-            role: "super_admin",
+            role: role,
             token: data.token,
             username: adminData.username,
+            firstname: adminData.firstname,
+            lastname: adminData.lastname,
+            profile_image: adminData.profile_image,
+            is_temp_password: adminData.is_temp_password,
             status: adminData.status || "ACTIVE"
           };
         } catch (error: any) {
           console.error('Admin auth error:', error);
+          throw new Error(error.message || 'Authentication failed');
+        }
+      },
+    }),
+
+    CredentialsProvider({
+      id: "fulfillment_officer_login",
+      name: "Fulfillment Officer",
+      credentials: {
+        identifier: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        try {
+          const response = await fetch(
+            'https://enugu-state-food-bank.onrender.com/api/v1/auth/fulfillment-officer-login',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify({
+                identifier: credentials?.identifier,
+                password: credentials?.password
+              }),
+            }
+          );
+
+          const data = await response.json();
+          
+          console.log('Fulfillment officer login API response:', data);
+          
+          if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Login failed');
+          }
+
+          // Extract admin data from the token
+          let adminData: any = null;
+          
+          if (data.token) {
+            try {
+              const decoded: any = jwt.decode(data.token);
+              console.log('Decoded JWT token:', decoded);
+              
+              if (decoded && decoded.admin) {
+                adminData = decoded.admin;
+              }
+            } catch (decodeError) {
+              console.error('Error decoding JWT token:', decodeError);
+            }
+          }
+
+          // Fallback to direct data extraction
+          if (!adminData) {
+            adminData = data.admin || data.data;
+          }
+
+          if (!adminData) {
+            throw new Error('No admin data received');
+          }
+
+          console.log('Extracted fulfillment officer data:', adminData);
+
+          // Return the user object
+          return {
+            id: adminData.id?.toString(),
+            userId: adminData.id?.toString(),
+            name: `${adminData.firstname || adminData.firstName || adminData.firtname || ''} ${adminData.lastname || adminData.lastName || ''}`.trim(),
+            email: adminData.email || adminData.mail,
+            role: "fulfillment_officer",
+            token: data.token,
+            username: adminData.username,
+            firstname: adminData.firstname,
+            lastname: adminData.lastname,
+            profile_image: adminData.profile_image,
+            is_temp_password: adminData.is_temp_password,
+            status: adminData.status || "ACTIVE"
+          };
+        } catch (error: any) {
+          console.error('Fulfillment officer auth error:', error);
           throw new Error(error.message || 'Authentication failed');
         }
       },
@@ -126,18 +212,16 @@ export const authOptions: NextAuthOptions = {
 
           const data = await response.json();
           
-          console.log('Employee login API response:', data); // Debug log
+          console.log('Employee login API response:', data);
           
           if (!response.ok || !data.success) {
             throw new Error(data.message || 'OTP verification failed');
           }
 
-          // Extract user data from the token
           let userData: any = null;
           
           if (data.token) {
             try {
-              // Decode the JWT token to get the user data
               const decoded: any = jwt.decode(data.token);
               console.log('Decoded JWT token:', decoded);
               
@@ -149,7 +233,6 @@ export const authOptions: NextAuthOptions = {
             }
           }
 
-          // Fallback to direct data extraction if token decoding fails
           if (!userData) {
             userData = data.user || data.data;
           }
@@ -158,9 +241,8 @@ export const authOptions: NextAuthOptions = {
             throw new Error('No user data received');
           }
 
-          console.log('Extracted user data:', userData); // Debug log
+          console.log('Extracted user data:', userData);
 
-          // Return the user object for the session
           return {
             id: userData.id?.toString(),
             userId: userData.id?.toString(),
@@ -187,12 +269,10 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      // Initial sign in
       if (user) {
         return { ...token, ...user };
       }
       
-      // Handle session updates if needed
       if (trigger === "update" && session?.user) {
         return { ...token, ...session.user };
       }
@@ -201,7 +281,6 @@ export const authOptions: NextAuthOptions = {
     },
 
     async session({ session, token }) {
-      // Send properties to the client
       if (token) {
         session.user = {
           ...session.user,
@@ -211,10 +290,21 @@ export const authOptions: NextAuthOptions = {
           role: token.role as string,
           token: token.token as string,
           status: token.status as string,
-          // Include all other properties that might be needed
-          ...(token.role === "super_admin" ? {
+        };
+
+        // Add role-specific properties
+        if (token.role === "super_admin" || token.role === "fulfillment_officer") {
+          session.user = {
+            ...session.user,
             username: token.username as string,
-          } : {
+            firstname: token.firstname as string,
+            lastname: token.lastname as string,
+            profile_image: token.profile_image as string | null,
+            is_temp_password: token.is_temp_password as boolean,
+          };
+        } else if (token.role === "user") {
+          session.user = {
+            ...session.user,
             is_compliance_submitted: token.is_compliance_submitted as boolean,
             loan_unit: token.loan_unit as number,
             loan_amount_collected: token.loan_amount_collected as number,
@@ -222,8 +312,8 @@ export const authOptions: NextAuthOptions = {
             government_entity: token.government_entity as string,
             phone: token.phone as string,
             employee_id: token.employee_id as string,
-          })
-        };
+          };
+        }
       }
       return session;
     },
@@ -242,12 +332,6 @@ export const authOptions: NextAuthOptions = {
     }
   }
 };
-
-// export async function getServerUser() {
-//   const session = await getServerSession(authOptions);
-//   console.log('Server session:', session);
-//   return NextResponse.json(JSON.parse(JSON.stringify(session?.user || null)));
-// }
 
 export async function getServerUser() {
   const session = await getServerSession(authOptions);
