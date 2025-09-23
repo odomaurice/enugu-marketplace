@@ -8,7 +8,6 @@ import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, Truck, CheckCircle, QrCode, UserCheck, PackageCheck } from 'lucide-react';
-import DeliveryVerification from './DeliveryVerification';
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await params;
@@ -229,10 +228,68 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <DeliveryVerification 
-              order={order} 
-              token={session.user.token}
-            />
+            {/* QR Code Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <QrCode className="h-5 w-5" />
+                  Delivery QR Code
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-center">
+                <div className="border rounded-lg p-4 inline-block">
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/agent-dashboard/delivery/verify/${order.id}`)}`}
+                    alt="Delivery QR Code"
+                    className="mx-auto"
+                  />
+                  <p className="text-sm text-gray-600 mt-2">
+                    Scan this code for delivery verification
+                  </p>
+                </div>
+                
+                {/* Verification Steps */}
+                <div className="mt-6 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-100 p-2 rounded-full">
+                      <UserCheck className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Step 1: Verify Customer</p>
+                      <p className="text-sm text-muted-foreground">Confirm customer identity with email or phone</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-100 p-2 rounded-full">
+                      <PackageCheck className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Step 2: Enter OTP</p>
+                      <p className="text-sm text-muted-foreground">Input the OTP sent to customer</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-100 p-2 rounded-full">
+                      <CheckCircle className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Step 3: Confirm Delivery</p>
+                      <p className="text-sm text-muted-foreground">Mark order as delivered</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Start Verification Button */}
+                <Button asChild className="w-full mt-6 bg-green-600 hover:bg-green-700">
+                  <Link href={`/agent-dashboard/delivery/verify/${order.id}`}>
+                    <Truck className="h-4 w-4 mr-2" />
+                    Start Delivery Verification
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </CardContent>
         </Card>
       )}
