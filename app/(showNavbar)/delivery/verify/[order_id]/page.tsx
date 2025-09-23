@@ -222,12 +222,12 @@ export default function DeliveryVerificationPage() {
             <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep !== "order_details" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>
               1
             </div>
-            <div className={`w-16 h-1 ${currentStep !== "order_details" ? "bg-blue-600" : "bg-gray-200"}`}></div>
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep === "verify_otp" || currentStep === "completed" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>
+            <div className={`w-16 h-1 ${currentStep !== "order_details" ? "bg-green-600" : "bg-gray-200"}`}></div>
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep === "verify_otp" || currentStep === "completed" ? "bg-green-600 text-white" : "bg-gray-200"}`}>
               2
             </div>
-            <div className={`w-16 h-1 ${currentStep === "completed" ? "bg-blue-600" : "bg-gray-200"}`}></div>
-            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep === "completed" ? "bg-blue-600 text-white" : "bg-gray-200"}`}>
+            <div className={`w-16 h-1 ${currentStep === "completed" ? "bg-green-600" : "bg-gray-200"}`}></div>
+            <div className={`flex items-center justify-center w-8 h-8 rounded-full ${currentStep === "completed" ? "bg-green-600 text-white" : "bg-gray-200"}`}>
               3
             </div>
           </div>

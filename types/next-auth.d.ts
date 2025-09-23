@@ -7,9 +7,10 @@ declare module "next-auth" {
     userId: string;
     name: string;
     email: string;
-    role: string;
+    role: string; // This can now be "super_admin", "fulfillment_officer", or "user"
     token: string;
-    status?: string; // Add status field
+    status?: string;
+    is_temp_password?: boolean; // Add this field for fulfillment officers
     
     // Employee-specific fields (optional)
     phone?: string;
@@ -21,13 +22,15 @@ declare module "next-auth" {
     loan_amount_collected?: number;
     is_address_set?: boolean;
     is_compliance_submitted?: boolean; 
+    
     // Admin-specific fields (optional)
     username?: string;
+    firstname?: string;
+    lastname?: string;
+    profile_image?: string | null;
     
     // Common optional fields
     image?: string | null;
-    firstname?: string;
-    lastname?: string;
     createdAt?: string;
     updatedAt?: string;
   }
@@ -47,8 +50,8 @@ declare module "next-auth/jwt" {
     role: string;
     token: string;
     status?: string; 
+    is_temp_password?: boolean;
     is_compliance_submitted?: boolean;
-    
     
     // Employee-specific fields
     phone?: string;
@@ -62,10 +65,11 @@ declare module "next-auth/jwt" {
     
     // Admin-specific fields
     username?: string;
+    firstname?: string;
+    lastname?: string;
+    profile_image?: string | null;
     
     // Common optional fields
     image?: string | null;
-    firstname?: string;
-    lastname?: string;
   }
 }

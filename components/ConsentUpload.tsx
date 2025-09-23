@@ -14,7 +14,7 @@ interface ConsentUploadProps {
   onClose: () => void;
   onUploadSuccess: () => void;
   token: string;
-  returnUrl?: string; // Optional URL to display the uploaded image
+  returnUrl?: string;
 }
 
 export default function ConsentUpload({ 
@@ -30,7 +30,6 @@ export default function ConsentUpload({
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // File validation
       setSelectedFile(file);
       
       const reader = new FileReader();
@@ -71,8 +70,14 @@ export default function ConsentUpload({
 
       if (response.data.success) {
         toast.success('Compliance document uploaded successfully!');
-        onClose(); // Close dialog immediately
-        onUploadSuccess(); // Trigger refresh in parent
+        // Reset state first
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        setIsUploading(false);
+        
+        // Call success callback first, then close
+        onUploadSuccess();
+        onClose();
       } else {
         toast.error(response.data.message || 'Upload failed');
       }
@@ -84,8 +89,16 @@ export default function ConsentUpload({
     }
   };
 
+  // Reset state when dialog closes
+  const handleClose = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setIsUploading(false);
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Upload Compliance Document</DialogTitle>
@@ -110,6 +123,7 @@ export default function ConsentUpload({
                     size="sm"
                     className="absolute -top-2 -right-2"
                     onClick={handleRemoveFile}
+                    disabled={isUploading}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -135,7 +149,7 @@ export default function ConsentUpload({
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={onClose} disabled={isUploading}>
+            <Button variant="outline" onClick={handleClose} disabled={isUploading}>
               Cancel
             </Button>
             <Button

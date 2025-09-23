@@ -1,6 +1,6 @@
 "use client";
 
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useInView } from "react-intersection-observer";
 import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+
 import {
   Select,
   SelectContent,
@@ -20,13 +20,14 @@ import {
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Heart, HeartOff, Star, Eye, ShoppingCart } from "lucide-react";
+import { Heart, HeartOff, Star, ShoppingCart, AlertCircle, Info, Upload } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import ConsentUpload from "@/components/ConsentUpload";
 
 interface Product {
   id: string;
@@ -42,6 +43,65 @@ interface Product {
   reviewCount?: number;
 }
 
+function useCart(token?: string) {
+  const { data: cartResponse, error, refetch } = useQuery({
+    queryKey: ["cart", token],
+    queryFn: async () => {
+      if (!token) return { data: [] };
+      try {
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/cart`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        return res.data;
+      } catch (error) {
+        console.error("Cart fetch error:", error);
+        return { data: [] };
+      }
+    },
+    enabled: !!token,
+    refetchInterval: 3000,
+    refetchOnWindowFocus: true,
+  });
+
+  const items = cartResponse?.data || [];
+  const itemCount = items.reduce(
+    (sum: number, item: { quantity: number }) => sum + (item.quantity || 0),
+    0
+  );
+
+  return { items, itemCount, error, refetch };
+}
+
+function CartPreview({ token }: { token?: string }) {
+  const router = useRouter();
+  const { itemCount, error, refetch } = useCart(token);
+
+  return (
+    <div className="relative">
+      <Button
+        onClick={() => {
+          refetch();
+          router.push("/employee-dashboard/cart");
+        }}
+        className="bg-orange-600 hover:bg-orange-700 relative"
+      >
+        <ShoppingCart className="mr-2 h-4 w-4" />
+        Cart
+        {itemCount > 0 && (
+          <span className="ml-2 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs">
+            {itemCount}
+          </span>
+        )}
+      </Button>
+      {error && (
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs">
+          !
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function ProductsPage() {
   const [perishableFilter, setPerishableFilter] = useState<string>("all");
   const { data: clientSession } = useSession();
@@ -50,51 +110,13 @@ export default function ProductsPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [sortOption, setSortOption] = useState<string>("name-asc");
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [wishlistItems, setWishlistItems] = useState<string[]>([]);
+  const [showComplianceDialog, setShowComplianceDialog] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const { ref, inView } = useInView();
   const router = useRouter();
-
-  const {
-    data,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    status,
-  } = useInfiniteQuery({
-    queryKey: ["products"],
-    queryFn: async ({ pageParam = 1 }) => {
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/products`,
-        {
-          params: {
-            page: pageParam,
-            limit: 12,
-          },
-        }
-      );
-
-      // Add mock ratings to match product-1.png
-      const productsWithRatings = res.data.data.map((product: Product) => ({
-        ...product,
-        rating: 5, // All products have 5 stars in the image
-        reviewCount: 2, // All products have 2 reviews in the image
-      }));
-
-      return { ...res.data, data: productsWithRatings };
-    },
-    initialPageParam: 1,
-    getNextPageParam: (lastPage, allPages) => {
-      if (lastPage.data.length < 12) return undefined;
-      return allPages.length + 1;
-    },
-  });
-
-  useEffect(() => {
-    if (inView && hasNextPage) {
-      fetchNextPage();
-    }
-  }, [inView, hasNextPage, fetchNextPage]);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -110,9 +132,91 @@ export default function ProductsPage() {
   }, []);
 
   const user = clientSession?.user || serverUser;
+  const isAdmin = user?.role === "super_admin";
+  const { itemCount } = useCart(user?.token); 
+
+  
+
+  
+
+ 
+
+
+
+  // React Query for compliance data
+  const { data: complianceData } = useQuery({
+    queryKey: ["compliance", user?.token],
+    queryFn: async () => {
+      if (!user?.token || isAdmin) return null;
+      
+      try {
+        const response = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/get-compliance`,
+          {
+            headers: { Authorization: `Bearer ${user.token}` },
+          }
+        );
+        return response.data.data;
+      } catch (error) {
+        console.error("Failed to fetch compliance data:", error);
+        return null;
+      }
+    },
+    enabled: !!user?.token && !isAdmin,
+  });
+
+  // React Query for products (infinite scroll)
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    status,
+  } = useInfiniteQuery({
+    queryKey: ["products", searchQuery, perishableFilter, sortOption],
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/products`,
+        {
+          params: {
+            page: pageParam,
+            limit: 12,
+            search: searchQuery || undefined,
+            isPerishable: perishableFilter !== "all" ? perishableFilter === "perishable" : undefined,
+            sort: sortOption,
+          },
+        }
+      );
+
+      const productsWithRatings = res.data.data.map((product: Product) => ({
+        ...product,
+        rating: 5,
+        reviewCount: 2,
+      }));
+
+      return { 
+        ...res.data, 
+        data: productsWithRatings,
+        currentPage: pageParam,
+        hasMore: res.data.data.length === 12
+      };
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      return lastPage.hasMore ? lastPage.currentPage + 1 : undefined;
+    },
+  });
+
+  useEffect(() => {
+    if (inView && hasNextPage) {
+      fetchNextPage();
+    }
+  }, [inView, hasNextPage, fetchNextPage]);
 
   useEffect(() => {
     if (user?.token) {
+      // Fetch wishlist
       const fetchWishlist = async () => {
         try {
           const res = await axios.get(
@@ -125,20 +229,18 @@ export default function ProductsPage() {
           console.error("Failed to fetch wishlist", error);
         }
       };
+
       fetchWishlist();
     }
-  }, [user]);
+  }, [user, isAdmin]);
 
-  // Combine all pages of products
   const allProducts = useMemo(() => {
     return data?.pages.flatMap((page) => page.data) || [];
   }, [data]);
 
-  // Apply client-side filtering, searching, and sorting
   const filteredProducts = useMemo(() => {
     let result = [...allProducts];
 
-    // Apply perishable filter
     if (perishableFilter !== "all") {
       const isPerishable = perishableFilter === "perishable";
       result = result.filter(
@@ -146,7 +248,6 @@ export default function ProductsPage() {
       );
     }
 
-    // Apply search - only search product fields, not variants
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(
@@ -157,7 +258,6 @@ export default function ProductsPage() {
       );
     }
 
-    // Apply sorting - only use product basePrice, not variant prices
     switch (sortOption) {
       case "name-asc":
         result.sort((a, b) => a.name.localeCompare(b.name));
@@ -178,7 +278,42 @@ export default function ProductsPage() {
     return result;
   }, [allProducts, perishableFilter, searchQuery, sortOption]);
 
+  const getComplianceStatusMessage = () => {
+    if (isAdmin) return "Admin users cannot add items to cart";
+    if (!user) return "Please login to access this feature";
+    if (!complianceData) return "Submit compliance form to enable cart features";
+    if (complianceData?.status === "PENDING") return "Compliance pending admin approval";
+    if (complianceData?.status === "DENIED") return "Your compliance form was rejected. Please submit a new one.";
+    return "";
+  };
+
+  const isCartActionAllowed = () => {
+    if (isAdmin) return false;
+    if (!user) return false;
+    if (!complianceData) return false;
+    if (complianceData?.status === "PENDING") return false;
+    if (complianceData?.status === "DENIED") return false;
+    return complianceData?.status === "APPROVED";
+  };
+
+  const toggleDescription = (productId: string) => {
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(productId)) {
+        newSet.delete(productId);
+      } else {
+        newSet.add(productId);
+      }
+      return newSet;
+    });
+  };
+
   const toggleWishlist = async (productId: string) => {
+    if (isAdmin) {
+      toast.info("Admin users cannot add items to wishlist");
+      return;
+    }
+
     if (!user?.token) {
       toast.error("Please login to manage your wishlist");
       router.push(
@@ -189,17 +324,33 @@ export default function ProductsPage() {
       return;
     }
 
+    if (!complianceData) {
+      setShowComplianceDialog(true);
+      toast.error("Please submit your compliance form first");
+      return;
+    }
+
+    if (complianceData?.status === "PENDING") {
+      toast.error("Your compliance form is pending admin approval");
+      return;
+    }
+
+    if (complianceData?.status === "DENIED") {
+      setShowComplianceDialog(true);
+      toast.error("Your compliance form was rejected. Please submit a new one.");
+      return;
+    }
+
     try {
       setIsWishlistLoading(true);
       const isCurrentlyInWishlist = wishlistItems.includes(productId);
 
       const payload = {
         productId: isCurrentlyInWishlist ? null : productId,
-        variantId: null, // Always null since we're focusing on products
+        variantId: null,
       };
 
       if (isCurrentlyInWishlist) {
-        // Find and remove the item
         const wishlistRes = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/wishlist`,
           { headers: { Authorization: `Bearer ${user.token}` } }
@@ -222,7 +373,6 @@ export default function ProductsPage() {
         );
       }
 
-      // Update local state
       setWishlistItems((prev) =>
         isCurrentlyInWishlist
           ? prev.filter((id) => id !== productId)
@@ -239,7 +389,123 @@ export default function ProductsPage() {
     }
   };
 
-  // Function to render star ratings
+ const addToCart = async (product: Product) => {
+  if (isAdmin) {
+    toast.info("Admin users cannot add items to cart");
+    return;
+  }
+
+  if (!user) {
+    toast.error("Please login to add items to cart");
+    router.push(
+      `/employee-login?returnUrl=${encodeURIComponent(
+        window.location.pathname
+      )}`
+    );
+    return;
+  }
+
+  if (user.role !== "user") {
+    toast.error("Only employees can add products to cart");
+    return;
+  }
+
+  if (!complianceData) {
+    setShowComplianceDialog(true);
+    toast.error("Please submit your compliance form first");
+    return;
+  }
+
+  if (complianceData?.status === "PENDING") {
+    toast.error("Your compliance form is pending admin approval");
+    return;
+  }
+
+  if (complianceData?.status === "DENIED") {
+    setShowComplianceDialog(true);
+    toast.error("Your compliance form was rejected. Please submit a new one.");
+    return;
+  }
+
+  const payload = { productId: product.id, quantity: 1 };
+  let toastId: string | number | undefined;
+
+  try {
+    setIsAddingToCart(true);
+    toastId = toast.loading("Adding to cart...");
+
+    const response = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/cart/add-to-cart`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+          "Content-Type": "application/json",
+        },
+        timeout: 10000,
+      }
+    );
+
+    if (response.status === 200 || response.status === 201) {
+      // Force a complete refetch of the cart
+      await queryClient.refetchQueries({ 
+        queryKey: ['cart', user.token],
+        exact: true,
+      });
+      
+      toast.success("Item added to cart!", {
+        id: toastId,
+        action: {
+          label: "View Cart",
+          onClick: () => router.push("/employee-dashboard/cart"),
+        },
+      });
+      
+      // Small delay to ensure cart is updated before redirect
+      setTimeout(() => {
+        router.push("/employee-dashboard/cart");
+      }, 500);
+    } else {
+      // Handle other successful status codes if needed
+      toast.error("Unexpected response from server", {
+        id: toastId,
+      });
+    }
+  } catch (error: any) {
+    console.error("Add to cart error:", error);
+    
+    // More specific error handling
+    if (error.response) {
+      // Server responded with error status
+      toast.error(error.response.data?.message || `Server error: ${error.response.status}`, {
+        id: toastId,
+      });
+    } else if (error.request) {
+      // Request was made but no response received
+      toast.error("Network error - please check your connection", {
+        id: toastId,
+      });
+    } else if (error.code === 'ECONNABORTED') {
+      // Request timeout
+      toast.error("Request timeout - please try again", {
+        id: toastId,
+      });
+    } else {
+      // Other errors
+      toast.error(error.message || "Failed to add to cart", {
+        id: toastId,
+      });
+    }
+  } finally {
+    setIsAddingToCart(false);
+  }
+};
+
+  const handleComplianceUploadSuccess = () => {
+    setShowComplianceDialog(false);
+    queryClient.invalidateQueries({ queryKey: ["compliance"] });
+  };
+
   const renderStars = (rating: number) => {
     return Array(5)
       .fill(0)
@@ -254,7 +520,6 @@ export default function ProductsPage() {
       ));
   };
 
-  // Function to handle image errors
   const handleImageError = (
     e: React.SyntheticEvent<HTMLImageElement, Event>
   ) => {
@@ -265,8 +530,91 @@ export default function ProductsPage() {
   return (
     <div className="container py-8">
       <TooltipProvider>
-        <h1 className="text-3xl font-bold mb-8">All Products</h1>
+        {/* Fixed Cart Icon */}
+      
+{user && (
+  <div className="fixed bottom-6 right-6 z-50">
+    <button
+      onClick={() => router.push("/employee-dashboard/cart")}
+      className="relative bg-orange-600 hover:bg-orange-700 text-white p-4 rounded-full shadow-lg"
+    >
+      <ShoppingCart className="h-6 w-6" />
+      {itemCount > 0 && (
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs">
+          {itemCount}
+        </span>
+      )}
+    </button>
+  </div>
+)}
 
+
+        {/* Header with Cart Button */}
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">All Products</h1>
+          <CartPreview token={user?.token} />
+        </div>
+
+        {/* Compliance Status Banners */}
+        {!isAdmin && user && (!complianceData || complianceData?.is_compliance_submitted === false) && (
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              <p>Please submit your compliance form to add items to cart.</p>
+              <Button
+                onClick={() => setShowComplianceDialog(true)}
+                className="ml-4 bg-yellow-600 hover:bg-yellow-700"
+                size="sm"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Submit Compliance
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!isAdmin && user && complianceData?.status === "PENDING" && (
+          <div className="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 mb-6 rounded">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              <p>
+                Your compliance form is pending admin approval. You cannot add
+                items until approved.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {!isAdmin && user && complianceData?.status === "DENIED" && (
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              <div>
+                <p className="font-semibold">Compliance Form Rejected</p>
+                <p>Your compliance form was rejected. Please submit a new one.</p>
+                <Button
+                  onClick={() => setShowComplianceDialog(true)}
+                  className="mt-2 bg-red-600 hover:bg-red-700"
+                  size="sm"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Submit New Compliance
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isAdmin && (
+          <div className="bg-purple-100 border-l-4 border-purple-500 text-purple-700 p-4 mb-6 rounded">
+            <div className="flex items-center">
+              <Info className="h-5 w-5 mr-2" />
+              <p>Admin view: Cart and wishlist features are disabled.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
           <Input
             placeholder="Search by product name, description, or price..."
@@ -315,7 +663,19 @@ export default function ProductsPage() {
             ))}
           </div>
         ) : status === "error" ? (
-          <div>Error: {error.message}</div>
+          <div className="text-center py-12">
+            <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded max-w-md mx-auto">
+              <p className="font-bold">Error loading products</p>
+              <p className="text-sm">{error.message}</p>
+              <Button
+                onClick={() => window.location.reload()}
+                className="mt-2 bg-red-600 hover:bg-red-700"
+                size="sm"
+              >
+                Reload Page
+              </Button>
+            </div>
+          </div>
         ) : (
           <>
             {filteredProducts.length === 0 ? (
@@ -326,123 +686,133 @@ export default function ProductsPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProducts.map((product: Product) => (
-                  <Card
-                    key={product.id}
-                    className="h-full flex flex-col overflow-hidden border-0 shadow-md"
-                  >
-                    <CardHeader className="p-0 relative">
-                      <div className="relative h-60 w-full">
-                        <Image
-                          src={
-                            product.product_image || "/placeholder-product.jpg"
-                          }
-                          alt={product.name}
-                          fill
-                          className="object-contain w-full h-full p-4 bg-white"
-                          onError={handleImageError}
-                          style={{ objectFit: "contain" }}
-                        />
-                        <button
-                          onClick={() => toggleWishlist(product.id)}
-                          className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors z-10"
-                          aria-label="Add to wishlist"
-                          disabled={isWishlistLoading}
-                        >
-                          {wishlistItems.includes(product.id) ? (
-                            <HeartOff size={20} className="text-red-500" />
-                          ) : (
-                            <Heart size={20} className="text-gray-600" />
+                {filteredProducts.map((product: Product) => {
+                  const isDescriptionExpanded = expandedDescriptions.has(product.id);
+                  const truncatedDescription = product.description.length > 100 
+                    ? product.description.substring(0, 100) + '...' 
+                    : product.description;
+
+                  return (
+                    <Card
+                      key={product.id}
+                      className="h-full flex flex-col overflow-hidden border-0 shadow-md"
+                    >
+                      <CardHeader className="p-0 relative">
+                        <div className="relative h-60 w-full">
+                          <Image
+                            src={
+                              product.product_image || "/placeholder-product.jpg"
+                            }
+                            alt={product.name}
+                            fill
+                            className="object-contain w-full h-full p-4 bg-white"
+                            onError={handleImageError}
+                            style={{ objectFit: "contain" }}
+                          />
+                          <button
+                            onClick={() => toggleWishlist(product.id)}
+                            className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors z-10"
+                            aria-label="Add to wishlist"
+                            disabled={isWishlistLoading || isAdmin}
+                          >
+                            {wishlistItems.includes(product.id) ? (
+                              <HeartOff size={20} className="text-red-500" />
+                            ) : (
+                              <Heart size={20} className="text-gray-600" />
+                            )}
+                          </button>
+
+                          {product.active && (
+                            <div className="absolute top-3 left-3 bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
+                              In Stock
+                            </div>
                           )}
-                        </button>
-
-                        {/* Stock status badge */}
-                        {product.active && (
-                          <div className="absolute top-3 left-3 bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
-                            In Stock
-                          </div>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-4 flex flex-col flex-grow p-5">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-bold text-lg">{product.name}</h3>
-                        <span
-                          className={`text-xs px-2 py-1 rounded ${
-                            product.isPerishable
-                              ? "bg-green-100 text-green-800"
-                              : "bg-blue-100 text-blue-800"
-                          }`}
-                        >
-                          {product.isPerishable
-                            ? "Perishable"
-                            : "Non-Perishable"}
-                        </span>
-                      </div>
-
-                      {/* Star rating - matches product-1.png */}
-                      <div className="flex items-center mb-3">
-                        <div className="flex mr-1">
-                          {renderStars(product.rating || 5)}
                         </div>
-                        <span className="text-xs text-gray-600">
-                          ({product.reviewCount || 2})
-                        </span>
-                      </div>
-
-                      <p className="text-sm text-gray-600 mb-4 flex-grow">
-                        {product.description}
-                      </p>
-
-                      <div className="mt-auto">
-                        <div className="mb-4">
-                          <span className="font-bold text-lg">
-                            {new Intl.NumberFormat("en-NG", {
-                              style: "currency",
-                              currency: product.currency,
-                              currencyDisplay: "narrowSymbol",
-                            }).format(product.basePrice)}
+                      </CardHeader>
+                      <CardContent className="pt-4 flex flex-col flex-grow p-5">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-bold text-lg">{product.name}</h3>
+                          <span
+                            className={`text-xs px-2 py-1 rounded ${
+                              product.isPerishable
+                                ? "bg-green-100 text-green-800"
+                                : "bg-blue-100 text-blue-800"
+                            }`}
+                          >
+                            {product.isPerishable
+                              ? "Perishable"
+                              : "Non-Perishable"}
                           </span>
                         </div>
 
-                        <div className="flex md:flex-row flex-col gap-2">
-                          <Button
-                            asChild
-                            className="w-full md:w-1/2 bg-orange-700 hover:bg-orange-600 h-11 font-bold"
-                          >
-                            <Link href={`/employee-dashboard/products/${product.id}`}>
-                              {/* <Eye className="mr-2 h-4 w-4" /> */}
-                              View Details
-                            </Link>
-                          </Button>
-
-                          <Button
-                            variant="outline"
-                            className="w-full md:w-1/2 h-11"
-                            onClick={() => toggleWishlist(product.id)}
-                            disabled={isWishlistLoading}
-                          >
-                            {wishlistItems.includes(product.id) ? (
-                              <>
-                                {/* <HeartOff className="mr-2 h-4 w-4" /> */}
-                                Remove from Wishlist
-                              </>
-                            ) : (
-                              <>
-                                {/* <Heart className="mr-2 h-4 w-4" /> */}
-                                Add to Wishlist
-                              </>
-                            )}
-                          </Button>
+                        <div className="flex items-center mb-3">
+                          <div className="flex mr-1">
+                            {renderStars(product.rating || 5)}
+                          </div>
+                          <span className="text-xs text-gray-600">
+                            ({product.reviewCount || 2})
+                          </span>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+
+                        <p className="text-sm text-gray-600 mb-4 flex-grow">
+                          {isDescriptionExpanded ? product.description : truncatedDescription}
+                          {product.description.length > 100 && (
+                            <button
+                              onClick={() => toggleDescription(product.id)}
+                              className="text-orange-600 hover:text-orange-700 ml-1 text-sm font-medium"
+                            >
+                              {isDescriptionExpanded ? "View less" : "View more"}
+                            </button>
+                          )}
+                        </p>
+
+                        <div className="mt-auto">
+                          <div className="mb-4">
+                            <span className="font-bold text-lg">
+                              {new Intl.NumberFormat("en-NG", {
+                                style: "currency",
+                                currency: product.currency,
+                                currencyDisplay: "narrowSymbol",
+                              }).format(product.basePrice)}
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  className="w-full bg-orange-700 hover:bg-orange-600 h-11 font-bold"
+                                  onClick={() => addToCart(product)}
+                                  disabled={!isCartActionAllowed() || isAddingToCart || isAdmin}
+                                >
+                                  {isAddingToCart ? "Adding..." : "Add to Cart"}
+                                </Button>
+                              </TooltipTrigger>
+                              {(!isCartActionAllowed() || isAdmin) && (
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p>{getComplianceStatusMessage()}</p>
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+
+                            <Button
+                              asChild
+                              variant="outline"
+                              className="w-full h-11"
+                            >
+                              <Link href={`/employee-dashboard/products/${product.id}`}>
+                                View Details
+                              </Link>
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
 
-            {/* Keep the infinite loading for initial load */}
             {filteredProducts.length > 0 &&
               perishableFilter === "all" &&
               searchQuery === "" && (
@@ -467,6 +837,17 @@ export default function ProductsPage() {
                 </div>
               )}
           </>
+        )}
+
+        {/* Compliance Upload Dialog */}
+        {!isAdmin && (
+          <ConsentUpload
+            isOpen={showComplianceDialog}
+            onClose={() => setShowComplianceDialog(false)}
+            onUploadSuccess={handleComplianceUploadSuccess}
+            token={user?.token || ""}
+            returnUrl={window.location.pathname}
+          />
         )}
       </TooltipProvider>
     </div>

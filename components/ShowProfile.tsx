@@ -30,7 +30,14 @@ const user = clientSession?.user || serverUser;
   const handleDashboardClick = () => {
     if (user?.role === 'super_admin') {
       router.push('/admin-dashboard');
-    } else {
+    } 
+
+     else if (user?.role === 'fulfillment_officer') {
+      router.push('/agent-dashboard');
+    } 
+
+    
+     else {
       router.push('/employee-dashboard');
     }
   };

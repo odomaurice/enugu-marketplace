@@ -24,15 +24,17 @@
       path: "products",
      
     },
-    {
-      title: "Product-Variants",
-     
-      path: "product-variants",
-     
-    },
+   
     {
       title: "Orders",
       path: "orders",
+    },
+
+     {
+      title: "Fulfillmemt Agents",
+     
+      path: "agents",
+     
     },
   
     {
