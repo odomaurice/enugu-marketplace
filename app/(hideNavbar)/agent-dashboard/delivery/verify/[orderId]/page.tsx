@@ -1,4 +1,4 @@
-
+// app/agent-dashboard/delivery/verify/[order_id]/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -34,7 +34,12 @@ export default function DeliveryVerificationPage() {
   const fetchOrderData = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/generate-qr-code?order_id=${orderId}`);
+      // Use the same endpoint as your order detail page
+      const response = await fetch(`${API_BASE_URL}/agent/single-order?order_id=${orderId}`, {
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -59,6 +64,11 @@ export default function DeliveryVerificationPage() {
   const verifyUser = async () => {
     if (!userIdentifier.trim()) {
       toast.error("Please enter email or phone number");
+      return;
+    }
+
+    if (!orderId) {
+      toast.error("No order ID available");
       return;
     }
 
@@ -94,6 +104,11 @@ export default function DeliveryVerificationPage() {
   const verifyOTP = async () => {
     if (!otp.trim() || otp.length !== 6) {
       toast.error("Please enter a valid 6-digit OTP");
+      return;
+    }
+
+    if (!orderId || !userId) {
+      toast.error("Missing required information for verification");
       return;
     }
 
@@ -167,10 +182,13 @@ export default function DeliveryVerificationPage() {
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-4">Invalid QR Code</h1>
           <p className="text-gray-600 mb-6">The scanned QR code is invalid or the order cannot be found.</p>
-          <Button onClick={() => router.push('/agent-dashboard/orders')}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Orders
-          </Button>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-500">Order ID: {orderId}</p>
+            <Button onClick={() => router.push('/agent-dashboard/orders')}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Orders
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -307,14 +325,14 @@ export default function DeliveryVerificationPage() {
                       <div key={item.id} className="flex items-center gap-3 p-2 border rounded">
                         <div className="relative h-16 w-16 rounded-md overflow-hidden">
                           <Image
-                            src={item.Product?.product_image || '/placeholder-product.jpg'}
-                            alt={item.Product?.name || 'Product'}
+                            src={item.Product?.product_image || item.variant?.image || '/placeholder-product.jpg'}
+                            alt={item.Product?.name || item.variant?.name || 'Product'}
                             fill
                             className="object-cover"
                           />
                         </div>
                         <div className="flex-1">
-                          <p className="font-medium">{item.Product?.name}</p>
+                          <p className="font-medium">{item.Product?.name || item.variant?.name}</p>
                           <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                           {item.Product?.isPerishable && (
                             <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
