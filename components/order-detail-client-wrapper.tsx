@@ -2,10 +2,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Truck, Camera, UserCheck, PackageCheck, CheckCircle, QrCode } from 'lucide-react';
+import { Truck, UserCheck, PackageCheck, CheckCircle, QrCode } from 'lucide-react';
 import Link from 'next/link';
 
 interface OrderDetailClientWrapperProps {
@@ -15,12 +14,10 @@ interface OrderDetailClientWrapperProps {
 }
 
 export default function OrderDetailClientWrapper({ order, orderId, user }: OrderDetailClientWrapperProps) {
-  const router = useRouter();
   const [isDelivered] = useState(order.orderStatus === 'DELIVERED');
   
-  // Generate QR code URL for this order
-  const frontendUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://enugu-marketplace.vercel.app';
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`${frontendUrl}/agent-dashboard/delivery/verify/${orderId}`)}`;
+  // Use your backend endpoint to generate QR code that points to delivery verification
+  const qrCodeUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/generate-qr-code?order_id=${orderId}`;
 
   return (
     <>
@@ -47,6 +44,9 @@ export default function OrderDetailClientWrapper({ order, orderId, user }: Order
               />
               <p className="text-sm text-gray-600 mt-2">
                 Scan this code to verify delivery
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Points to: /agent-dashboard/delivery/verify/{orderId}
               </p>
             </div>
           </CardContent>
@@ -97,12 +97,6 @@ export default function OrderDetailClientWrapper({ order, orderId, user }: Order
                     <QrCode className="h-3 w-3" />
                   </div>
                   <span>Customer shows their QR code (from their order confirmation)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="bg-blue-100 rounded-full p-1">
-                    <Camera className="h-3 w-3" />
-                  </div>
-                  <span>You scan their QR code using your device camera</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="bg-blue-100 rounded-full p-1">
