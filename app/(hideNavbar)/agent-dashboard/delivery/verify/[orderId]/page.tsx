@@ -1,4 +1,4 @@
-// app/agent-dashboard/delivery/verify/[order_id]/page.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -34,24 +34,34 @@ export default function DeliveryVerificationPage() {
   const fetchOrderData = async () => {
     setIsLoading(true);
     try {
-      // Use the same endpoint as your order detail page
-      const response = await fetch(`${API_BASE_URL}/agent/single-order?order_id=${orderId}`, {
+      console.log("Fetching order data for:", orderId);
+      
+      // Use the generate-qr-code endpoint which doesn't require authentication
+      const response = await fetch(`${API_BASE_URL}/generate-qr-code?order_id=${orderId}`, {
+        method: 'GET',
         headers: {
           'Accept': 'application/json',
-        }
+          'Content-Type': 'application/json',
+        },
       });
 
+      console.log("Response status:", response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log("API Response:", data);
+        
         if (data.data) {
           setOrderData(data.data);
           setUserId(data.data.userId);
           toast.success("Order loaded successfully");
         } else {
-          throw new Error("Order not found");
+          throw new Error("Order data not found in response");
         }
       } else {
-        throw new Error("Failed to fetch order");
+        const errorText = await response.text();
+        console.error("API Error:", errorText);
+        throw new Error(`Failed to fetch order: ${response.status} ${response.statusText}`);
       }
     } catch (error: any) {
       console.error("Failed to fetch order data:", error);
@@ -74,6 +84,8 @@ export default function DeliveryVerificationPage() {
 
     setIsLoading(true);
     try {
+      console.log("Verifying user:", { order_id: orderId, identifier: userIdentifier });
+      
       const response = await fetch(`${API_BASE_URL}/confirm-user-for-delivery`, {
         method: "POST",
         headers: { 
@@ -85,6 +97,8 @@ export default function DeliveryVerificationPage() {
         })
       });
 
+      console.log("Verify user response status:", response.status);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Verification failed: ${response.status}`);
@@ -95,6 +109,7 @@ export default function DeliveryVerificationPage() {
       toast.success(data.message || "User verified! OTP sent to customer.");
       
     } catch (error: any) {
+      console.error("User verification error:", error);
       toast.error(error.message || "Failed to verify user");
     } finally {
       setIsLoading(false);
@@ -114,6 +129,8 @@ export default function DeliveryVerificationPage() {
 
     setIsLoading(true);
     try {
+      console.log("Verifying OTP:", { order_id: orderId, user_id: userId, otp: otp });
+      
       const response = await fetch(`${API_BASE_URL}/confirm-delivery-order`, {
         method: "POST",
         headers: { 
@@ -125,6 +142,8 @@ export default function DeliveryVerificationPage() {
           otp: otp 
         })
       });
+
+      console.log("Verify OTP response status:", response.status);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -141,6 +160,7 @@ export default function DeliveryVerificationPage() {
       }, 1000);
       
     } catch (error: any) {
+      console.error("OTP verification error:", error);
       toast.error(error.message || "Invalid OTP. Please try again.");
     } finally {
       setIsLoading(false);
@@ -165,11 +185,36 @@ export default function DeliveryVerificationPage() {
     });
   };
 
+  // Test the API endpoint directly
+  const testApiEndpoint = async () => {
+    try {
+      const testUrl = `${API_BASE_URL}/generate-qr-code?order_id=${orderId}`;
+      console.log("Testing API endpoint:", testUrl);
+      
+      const response = await fetch(testUrl);
+      const data = await response.json();
+      console.log("Test API Response:", data);
+      
+      if (data.data) {
+        toast.success("API endpoint is working!");
+        setOrderData(data.data);
+      } else {
+        toast.error("API returned no data");
+      }
+    } catch (error) {
+      console.error("API test failed:", error);
+      toast.error("API test failed");
+    }
+  };
+
   if (isLoading && !orderData) {
     return (
       <div className="container py-12">
         <div className="max-w-4xl mx-auto text-center">
           <p>Loading order details...</p>
+          <Button onClick={testApiEndpoint} variant="outline" className="mt-4">
+            Test API Endpoint
+          </Button>
         </div>
       </div>
     );
@@ -184,10 +229,15 @@ export default function DeliveryVerificationPage() {
           <p className="text-gray-600 mb-6">The scanned QR code is invalid or the order cannot be found.</p>
           <div className="space-y-4">
             <p className="text-sm text-gray-500">Order ID: {orderId}</p>
-            <Button onClick={() => router.push('/agent-dashboard/orders')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Orders
-            </Button>
+            <div className="space-x-2">
+              <Button onClick={testApiEndpoint} variant="outline">
+                Test API Connection
+              </Button>
+              <Button onClick={() => router.push('/agent-dashboard/orders')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Orders
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -207,6 +257,8 @@ export default function DeliveryVerificationPage() {
           </div>
           <p className="text-gray-600">Order #{orderId.split('-')[0]}</p>
         </div>
+
+       
 
         {/* Progress Indicator */}
         <div className="flex justify-center mb-6">
