@@ -101,7 +101,7 @@ const Sidebar = ({ dashboard }: SidebarProps) => {
       </div>
 
       {/* Dashboard Navigation */}
-      {dashboard === "super_admin" && <AdminSideBarComponent findpath={findpath} />}
+      {dashboard === "admin" && <AdminSideBarComponent findpath={findpath} />}
 
       {/* User Profile & Logout */}
       <div className="w-full h-[120px] bg-green-800 mt-16 flex items-end justify-center relative rounded-lg">

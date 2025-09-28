@@ -42,6 +42,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
 
   const isDelivered = order.orderStatus === 'DELIVERED';
 
+  // Use your actual Vercel domain
+  const frontendUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://enugu-marketplace.vercel.app';
+
   return (
     <div className="p-4 space-y-6">
       <Button asChild variant="ghost">
@@ -239,7 +242,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
               <CardContent className="text-center">
                 <div className="border rounded-lg p-4 inline-block">
                   <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/agent-dashboard/delivery/verify/${order.id}`)}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`${frontendUrl}/agent-dashboard/delivery/verify/${order.id}`)}`}
                     alt="Delivery QR Code"
                     className="mx-auto"
                   />
