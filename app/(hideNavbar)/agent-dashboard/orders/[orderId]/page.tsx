@@ -1,18 +1,20 @@
+
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import axios from 'axios';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, Truck, CheckCircle, QrCode, UserCheck, PackageCheck, Camera } from 'lucide-react';
-import QrScanner from '@/components/qr-scanner';
+import { ArrowLeft, Truck, CheckCircle } from 'lucide-react';
+import OrderDetailClientWrapper from '@/components/order-detail-client-wrapper';
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await params;
 
+  // Get session on server side
   const session = await getServerSession(authOptions);
   
   if (!session?.user) {
@@ -163,8 +165,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
                       <CheckCircle className="h-4 w-4 mr-2" />
                       <span className="text-sm font-medium">Delivered</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(order.deliveredAt || order.updatedAt).toLocaleDateString()}
+                    <p>
+                      {order.deliveredAt
+                        ? new Date(order.deliveredAt).toLocaleDateString()
+                        : "Not delivered yet"}
                     </p>
                   </div>
                 )}
@@ -219,118 +223,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
         </CardContent>
       </Card>
 
-      {/* Delivery Verification Section */}
-      {!isDelivered && (
-        <Card id="delivery-verification">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Truck className="h-5 w-5" />
-              Delivery Verification
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* QR Code Scanner */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Camera className="h-5 w-5" />
-                  Scan Customer's QR Code
-                </CardTitle>
-                <CardDescription>
-                  Use your device camera to scan the customer's QR code
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <QrScanner 
-                  onScan={(result) => {
-                    console.log("QR Code scanned:", result);
-                    // Extract order ID from QR code URL
-                    try {
-                      const url = new URL(result);
-                      const pathParts = url.pathname.split('/');
-                      const scannedOrderId = pathParts[pathParts.length - 1];
-                      
-                      if (scannedOrderId === order.id) {
-                        // Navigate to verification page
-                        window.location.href = `/agent-dashboard/delivery/verify/${order.id}`;
-                      } else {
-                        alert(`QR code is for a different order. Expected: ${order.id}, Got: ${scannedOrderId}`);
-                      }
-                    } catch (error) {
-                      // If it's not a URL, check if it's a direct order ID
-                      if (result === order.id) {
-                        window.location.href = `/agent-dashboard/delivery/verify/${order.id}`;
-                      } else {
-                        alert(`Invalid QR code. Scanned: ${result}`);
-                      }
-                    }
-                  }}
-                  onError={(error) => {
-                    console.error("QR Scanner error:", error);
-                    alert(error);
-                  }}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Manual Verification Option */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserCheck className="h-5 w-5" />
-                  Manual Verification
-                </CardTitle>
-                <CardDescription>
-                  Or start verification manually without scanning
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full bg-green-600 hover:bg-green-700">
-                  <Link href={`/agent-dashboard/delivery/verify/${order.id}`}>
-                    <Truck className="h-4 w-4 mr-2" />
-                    Start Manual Verification
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Instructions */}
-            <Card className="bg-blue-50 border-blue-200">
-              <CardHeader>
-                <CardTitle className="text-blue-800 text-sm">
-                  How to verify delivery:
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-blue-700 text-sm space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="bg-blue-100 rounded-full p-1">
-                    <Camera className="h-3 w-3" />
-                  </div>
-                  <span>Scan customer's QR code using camera</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="bg-blue-100 rounded-full p-1">
-                    <UserCheck className="h-3 w-3" />
-                  </div>
-                  <span>Verify customer identity with email/phone</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="bg-blue-100 rounded-full p-1">
-                    <PackageCheck className="h-3 w-3" />
-                  </div>
-                  <span>Enter OTP sent to customer</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="bg-blue-100 rounded-full p-1">
-                    <CheckCircle className="h-3 w-3" />
-                  </div>
-                  <span>Confirm delivery completion</span>
-                </div>
-              </CardContent>
-            </Card>
-          </CardContent>
-        </Card>
-      )}
+      {/* Client-side interactive components */}
+      <OrderDetailClientWrapper 
+        order={order} 
+        orderId={orderId} 
+        user={session.user} 
+      />
     </div>
   );
 }

@@ -16,7 +16,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 export default function DeliveryVerificationPage() {
   const params = useParams();
   const router = useRouter();
-  const orderId = params.order_id as string;
+  const orderId = params.orderId as string;
   
   const [orderData, setOrderData] = useState<any>(null);
   const [currentStep, setCurrentStep] = useState<"order_details" | "verify_user" | "verify_otp" | "completed">("order_details");
