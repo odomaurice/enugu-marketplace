@@ -1,6 +1,6 @@
 export const authApi = async (endpoint: string, data: any) => {
   try {
-    const response = await fetch(`https://enugu-state-food-bank.onrender.com/api/v1${endpoint}`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

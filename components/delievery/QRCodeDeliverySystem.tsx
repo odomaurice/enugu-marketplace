@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { QrCode, UserCheck, PackageCheck, ArrowLeft, Download } from "lucide-react";
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+//import "react-toastify/dist/ReactToastify.css";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://enugu-state-food-bank.onrender.com/api/v1";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ;
 
 export function QRCodeDeliverySystem() {
   const [orderId, setOrderId] = useState("");

@@ -161,7 +161,7 @@ const Header = () => {
               >
                 {link.name}
                 {pathname.startsWith(link.href) && (
-                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-green-600 rounded-full"></span>
+                  <span className="absolute bottom-0 left-0 w-full h-0.5  rounded-full"></span>
                 )}
               </Link>
             ))}

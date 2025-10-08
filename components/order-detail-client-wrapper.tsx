@@ -1,4 +1,4 @@
-
+// components/order-detail-client-wrapper.tsx
 'use client';
 
 import { useState } from 'react';
@@ -16,8 +16,10 @@ interface OrderDetailClientWrapperProps {
 export default function OrderDetailClientWrapper({ order, orderId, user }: OrderDetailClientWrapperProps) {
   const [isDelivered] = useState(order.orderStatus === 'DELIVERED');
   
-  // Use your backend endpoint to generate QR code that points to delivery verification
-  const qrCodeUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/generate-qr-code?order_id=${orderId}`;
+  // Generate QR code that points to the frontend delivery verification page
+  const frontendUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://enugu-marketplace.vercel.app';
+  const verificationUrl = `${frontendUrl}/agent-dashboard/delivery/verify/${orderId}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(verificationUrl)}`;
 
   return (
     <>
@@ -46,7 +48,7 @@ export default function OrderDetailClientWrapper({ order, orderId, user }: Order
                 Scan this code to verify delivery
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                Points to: /agent-dashboard/delivery/verify/{orderId}
+                Points to: {verificationUrl}
               </p>
             </div>
           </CardContent>
