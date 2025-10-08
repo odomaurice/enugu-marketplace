@@ -6,7 +6,7 @@ import ConsentUpload from './ConsentUpload';
   import { getSession } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+//import "react-toastify/dist/ReactToastify.css";
 
 export default function StatusCheckWrapper({ children }: { children: React.ReactNode }) {
   const { data: clientSession, status: sessionStatus } = useSession();

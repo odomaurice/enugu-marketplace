@@ -1,6 +1,5 @@
 import { getServerSession, NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { NextResponse } from "next/server";
 import jwt from 'jsonwebtoken';
 
 export const authOptions: NextAuthOptions = {
@@ -14,10 +13,11 @@ export const authOptions: NextAuthOptions = {
   },
 
   pages: {
+    signIn: '/admin-login',
     signOut: '/',
     error: '/auth/error',
     verifyRequest: '/auth/verify-otp',
-    // newUser: '/auth/new-user'
+    newUser: '/auth/new-user'
   },
 
   providers: [
@@ -30,8 +30,13 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
+          console.log('🔐 Admin login attempt with:', {
+            identifier: credentials?.identifier,
+            hasPassword: !!credentials?.password
+          });
+
           const response = await fetch(
-            'https://enugu-state-food-bank.onrender.com/api/v1/auth/admin-login',
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/admin-login`,
             {
               method: 'POST',
               headers: {
@@ -47,19 +52,36 @@ export const authOptions: NextAuthOptions = {
 
           const data = await response.json();
           
-          console.log('Admin login API response:', data);
-          
-          if (!response.ok || !data.success) {
+          console.log('📡 Admin API Response:', {
+            status: response.status,
+            success: data.success,
+            message: data.message,
+            hasToken: !!data.token,
+            hasAdminData: !!data.admin,
+            fullResponse: data
+          });
+
+          if (!response.ok) {
+            console.log('❌ API returned error status:', response.status);
+            throw new Error(data.message || `Login failed with status: ${response.status}`);
+          }
+
+          if (!data.success) {
+            console.log('❌ API returned success: false');
             throw new Error(data.message || 'Login failed');
           }
 
-          // Extract admin data from the token
+          if (!data.token) {
+            console.log('❌ No token in response');
+            throw new Error('No authentication token received');
+          }
+
           let adminData: any = null;
           
           if (data.token) {
             try {
               const decoded: any = jwt.decode(data.token);
-              console.log('Decoded JWT token:', decoded);
+              console.log('🔓 Decoded JWT:', decoded);
               
               if (decoded && decoded.admin) {
                 adminData = decoded.admin;
@@ -69,26 +91,29 @@ export const authOptions: NextAuthOptions = {
             }
           }
 
-          // Fallback to direct data extraction
           if (!adminData) {
             adminData = data.admin || data.super_admin || data.data;
           }
 
           if (!adminData) {
+            console.log('❌ No admin data found in token or response');
             throw new Error('No admin data received');
           }
 
-          console.log('Extracted admin data:', adminData);
+          console.log('✅ Admin data extracted:', {
+            id: adminData.id,
+            email: adminData.email,
+            name: `${adminData.firstname} ${adminData.lastname}`,
+            role: adminData.role
+          });
 
-          // Determine the role based on the response
           const role = adminData.role === 'fulfillment_officer' ? 'fulfillment_officer' : 'super_admin';
 
-          // Return the user object
           return {
-            id: adminData.id?.toString(),
+            id: adminData.id?.toString() || 'admin-id',
             userId: adminData.id?.toString(),
             name: `${adminData.firstname || adminData.firstName || adminData.firtname || ''} ${adminData.lastname || adminData.lastName || ''}`.trim(),
-            email: adminData.email || adminData.mail,
+            email: adminData.email || adminData.mail || credentials?.identifier,
             role: role,
             token: data.token,
             username: adminData.username,
@@ -99,8 +124,8 @@ export const authOptions: NextAuthOptions = {
             status: adminData.status || "ACTIVE"
           };
         } catch (error: any) {
-          console.error('Admin auth error:', error);
-          throw new Error(error.message || 'Authentication failed');
+          console.error('💥 Admin auth error:', error.message);
+          throw new Error(error.message || 'Admin authentication failed');
         }
       },
     }),
@@ -114,8 +139,12 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
+          console.log('🔐 Fulfillment officer login attempt with:', {
+            identifier: credentials?.identifier
+          });
+
           const response = await fetch(
-            'https://enugu-state-food-bank.onrender.com/api/v1/auth/fulfillment-officer-login',
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/fulfillment-officer-login`,
             {
               method: 'POST',
               headers: {
@@ -131,19 +160,23 @@ export const authOptions: NextAuthOptions = {
 
           const data = await response.json();
           
-          console.log('Fulfillment officer login API response:', data);
-          
+          console.log('📡 Fulfillment officer API Response:', {
+            status: response.status,
+            success: data.success,
+            message: data.message,
+            hasToken: !!data.token
+          });
+
           if (!response.ok || !data.success) {
-            throw new Error(data.message || 'Login failed');
+            throw new Error(data.message || 'Fulfillment officer login failed');
           }
 
-          // Extract admin data from the token
           let adminData: any = null;
           
           if (data.token) {
             try {
               const decoded: any = jwt.decode(data.token);
-              console.log('Decoded JWT token:', decoded);
+              console.log('🔓 Decoded JWT:', decoded);
               
               if (decoded && decoded.admin) {
                 adminData = decoded.admin;
@@ -153,7 +186,6 @@ export const authOptions: NextAuthOptions = {
             }
           }
 
-          // Fallback to direct data extraction
           if (!adminData) {
             adminData = data.admin || data.data;
           }
@@ -162,9 +194,8 @@ export const authOptions: NextAuthOptions = {
             throw new Error('No admin data received');
           }
 
-          console.log('Extracted fulfillment officer data:', adminData);
+          console.log('✅ Fulfillment officer data extracted:', adminData);
 
-          // Return the user object
           return {
             id: adminData.id?.toString(),
             userId: adminData.id?.toString(),
@@ -180,8 +211,116 @@ export const authOptions: NextAuthOptions = {
             status: adminData.status || "ACTIVE"
           };
         } catch (error: any) {
-          console.error('Fulfillment officer auth error:', error);
-          throw new Error(error.message || 'Authentication failed');
+          console.error('💥 Fulfillment officer auth error:', error);
+          throw new Error(error.message || 'Fulfillment officer authentication failed');
+        }
+      },
+    }),
+
+    CredentialsProvider({
+      id: "cashier_login",
+      name: "Cashier",
+      credentials: {
+        identifier: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        try {
+          console.log('🔐 Cashier login attempt with:', {
+            identifier: credentials?.identifier,
+            hasPassword: !!credentials?.password
+          });
+
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/cashier-login`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify({
+                identifier: credentials?.identifier,
+                password: credentials?.password
+              }),
+            }
+          );
+
+          const data = await response.json();
+          
+          console.log('📡 Cashier API Response:', {
+            status: response.status,
+            success: data.success,
+            message: data.message,
+            hasToken: !!data.token,
+            hasCashierData: !!data.cashier,
+            fullResponse: data
+          });
+
+          if (!response.ok) {
+            console.log('❌ API returned error status:', response.status);
+            throw new Error(data.message || `Cashier login failed with status: ${response.status}`);
+          }
+
+          if (!data.success) {
+            console.log('❌ API returned success: false');
+            throw new Error(data.message || 'Cashier login failed');
+          }
+
+          if (!data.token) {
+            console.log('❌ No token in response');
+            throw new Error('No authentication token received');
+          }
+
+          let cashierData: any = null;
+          
+          if (data.token) {
+            try {
+              const decoded: any = jwt.decode(data.token);
+              console.log('🔓 Decoded JWT:', decoded);
+              
+              if (decoded && decoded.cashier) {
+                cashierData = decoded.cashier;
+              }
+            } catch (decodeError) {
+              console.error('Error decoding JWT token:', decodeError);
+            }
+          }
+
+          if (!cashierData) {
+            cashierData = data.cashier || data.data;
+          }
+
+          if (!cashierData) {
+            console.log('❌ No cashier data found in token or response');
+            throw new Error('No cashier data received');
+          }
+
+          console.log('✅ Cashier data extracted:', {
+            id: cashierData.id,
+            email: cashierData.email,
+            name: `${cashierData.firstname} ${cashierData.lastname}`,
+            role: cashierData.role
+          });
+
+          return {
+            id: cashierData.id?.toString() || 'cashier-id',
+            userId: cashierData.id?.toString(),
+            name: `${cashierData.firstname || cashierData.firstName || cashierData.firtname || ''} ${cashierData.lastname || cashierData.lastName || ''}`.trim(),
+            email: cashierData.email || cashierData.mail || credentials?.identifier,
+            role: "cashier",
+            token: data.token,
+            username: cashierData.username,
+            firstname: cashierData.firstname,
+            lastname: cashierData.lastname,
+            profile_image: cashierData.profile_image,
+            status: "ACTIVE",
+            created_at: cashierData.created_at,
+            updated_at: cashierData.updated_at
+          };
+        } catch (error: any) {
+          console.error('💥 Cashier auth error:', error.message);
+          throw new Error(error.message || 'Cashier authentication failed');
         }
       },
     }),
@@ -195,8 +334,12 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
+          console.log('🔐 Employee OTP verification attempt with:', {
+            userId: credentials?.userId
+          });
+
           const response = await fetch(
-            'https://enugu-state-food-bank.onrender.com/api/v1/auth/verify-otp',
+            `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/verify-otp`,
             {
               method: 'POST',
               headers: {
@@ -212,7 +355,11 @@ export const authOptions: NextAuthOptions = {
 
           const data = await response.json();
           
-          console.log('Employee login API response:', data);
+          console.log('📡 Employee OTP API Response:', {
+            status: response.status,
+            success: data.success,
+            message: data.message
+          });
           
           if (!response.ok || !data.success) {
             throw new Error(data.message || 'OTP verification failed');
@@ -223,7 +370,7 @@ export const authOptions: NextAuthOptions = {
           if (data.token) {
             try {
               const decoded: any = jwt.decode(data.token);
-              console.log('Decoded JWT token:', decoded);
+              console.log('🔓 Decoded JWT:', decoded);
               
               if (decoded && decoded.user) {
                 userData = decoded.user;
@@ -241,7 +388,7 @@ export const authOptions: NextAuthOptions = {
             throw new Error('No user data received');
           }
 
-          console.log('Extracted user data:', userData);
+          console.log('✅ Employee data extracted:', userData);
 
           return {
             id: userData.id?.toString(),
@@ -260,8 +407,8 @@ export const authOptions: NextAuthOptions = {
             employee_id: userData.employee_id
           };
         } catch (error: any) {
-          console.error('Employee auth error:', error);
-          throw new Error(error.message || 'Authentication failed');
+          console.error('💥 Employee auth error:', error);
+          throw new Error(error.message || 'Employee authentication failed');
         }
       }
     })
@@ -269,22 +416,31 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user, trigger, session }) {
+      console.log('🔄 JWT callback - trigger:', trigger);
+      console.log('📥 JWT token input:', token);
+      console.log('👤 JWT user input:', user);
+
       if (user) {
-        return { ...token, ...user };
+        token = { ...token, ...user };
+        console.log('✅ JWT after user merge:', token);
       }
       
       if (trigger === "update" && session?.user) {
-        return { ...token, ...session.user };
+        token = { ...token, ...session.user };
+        console.log('🔄 JWT after session update:', token);
       }
       
       return token;
     },
 
     async session({ session, token }) {
+      console.log('🔄 Session callback - token:', token);
+      
       if (token) {
         session.user = {
           ...session.user,
           id: token.id as string,
+          userId: token.userId as string,
           name: token.name as string,
           email: token.email as string,
           role: token.role as string,
@@ -292,16 +448,25 @@ export const authOptions: NextAuthOptions = {
           status: token.status as string,
         };
 
-        // Add role-specific properties
-        if (token.role === "super_admin" || token.role === "fulfillment_officer") {
+        // Handle admin, fulfillment officer, and cashier roles (all have similar properties)
+        if (token.role === "super_admin" || token.role === "fulfillment_officer" || token.role === "cashier") {
           session.user = {
             ...session.user,
             username: token.username as string,
             firstname: token.firstname as string,
             lastname: token.lastname as string,
-            profile_image: token.profile_image as string | null,
+            profile_image: token.profile_image as string,
             is_temp_password: token.is_temp_password as boolean,
           };
+
+          // Add cashier-specific fields if available
+          if (token.role === "cashier") {
+            session.user = {
+              ...session.user,
+              createdAt: token.created_at as string,
+              updatedAt: token.updated_at as string,
+            };
+          }
         } else if (token.role === "user") {
           session.user = {
             ...session.user,
@@ -315,10 +480,14 @@ export const authOptions: NextAuthOptions = {
           };
         }
       }
+      
+      console.log('✅ Final session:', session);
       return session;
     },
 
     async redirect({ url, baseUrl }) {
+      console.log('🔄 Redirect callback - url:', url, 'baseUrl:', baseUrl);
+      
       if (url.includes('/employee-dashboard')) {
         const parsedUrl = new URL(url, baseUrl);
         const returnUrl = parsedUrl.searchParams.get('returnUrl');
@@ -335,5 +504,6 @@ export const authOptions: NextAuthOptions = {
 
 export async function getServerUser() {
   const session = await getServerSession(authOptions);
+  console.log('👤 getServerUser session:', session);
   return session?.user;
 }

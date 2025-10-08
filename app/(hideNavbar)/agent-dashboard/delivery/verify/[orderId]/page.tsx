@@ -1,4 +1,4 @@
-
+// app/agent-dashboard/delivery/verify/[orderId]/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -36,8 +36,8 @@ export default function DeliveryVerificationPage() {
     try {
       console.log("Fetching order data for:", orderId);
       
-      // Use the generate-qr-code endpoint which doesn't require authentication
-      const response = await fetch(`${API_BASE_URL}/generate-qr-code?order_id=${orderId}`, {
+      // Use the correct endpoint to get order data, not the QR code endpoint
+      const response = await fetch(`${API_BASE_URL}/delivery_order?order_id=${orderId}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -188,7 +188,7 @@ export default function DeliveryVerificationPage() {
   // Test the API endpoint directly
   const testApiEndpoint = async () => {
     try {
-      const testUrl = `${API_BASE_URL}/generate-qr-code?order_id=${orderId}`;
+      const testUrl = `${API_BASE_URL}/delivery_order?order_id=${orderId}`;
       console.log("Testing API endpoint:", testUrl);
       
       const response = await fetch(testUrl);
@@ -257,8 +257,6 @@ export default function DeliveryVerificationPage() {
           </div>
           <p className="text-gray-600">Order #{orderId.split('-')[0]}</p>
         </div>
-
-       
 
         {/* Progress Indicator */}
         <div className="flex justify-center mb-6">

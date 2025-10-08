@@ -483,11 +483,7 @@ const ProductInstance = () => {
             </div>
 
             {/* Results count */}
-            {filteredProducts && filteredProducts.length > 0 && (
-              <div className="text-sm text-gray-600 mb-6">
-                Showing {filteredProducts.length} of {products?.length || 0} products
-              </div>
-            )}
+           
 
             {/* Compliance Status Banners - Only show for non-admin users */}
             {!user && !isAdmin && !isAgent && user && !complianceData && (

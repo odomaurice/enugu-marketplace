@@ -95,8 +95,8 @@ const LeadershipProfile = () => {
               <div className="text-center relative z-10">
                 <div className="w-56 h-56 md:w-64 md:h-64 mx-auto rounded-2xl overflow-hidden relative mb-6 shadow-2xl border-4 border-white/20">
                   <Image 
-                    src="/Engr.jpeg" 
-                    alt="Michael Ogbuekwe" 
+                    src="/gov1.jpg" 
+                    alt="Peter Mbah" 
                     fill
                     className="object-cover"
                   />
@@ -119,7 +119,7 @@ const LeadershipProfile = () => {
                   className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
                   variants={itemVariants}
                 >
-                  Michael Ogbuekwe
+                  Peter Mbah
                 </motion.h2>
                 
                 <motion.div 
@@ -129,16 +129,16 @@ const LeadershipProfile = () => {
                   <div className="flex items-center mb-3">
                     <div className="w-2 h-8 bg-emerald-500 rounded-full mr-3"></div>
                     <p className="text-xl text-emerald-700 font-semibold">
-                      Special Adviser to the Governor of Enugu State
+                      Executive Governor of Enugu State
                     </p>
                   </div>
                   
-                  <div className="flex items-center">
+                  {/* <div className="flex items-center">
                     <div className="w-2 h-8 bg-teal-500 rounded-full mr-3"></div>
                     <p className="text-xl text-teal-700 font-semibold">
                       MD/CEO, Enugu State Marketing Company
                     </p>
-                  </div>
+                  </div> */}
                 </motion.div>
                 
                 <motion.div 
