@@ -9,7 +9,7 @@ import { CommonDashboardContext } from "@/providers/StateContext";
 //import { useSession } from "next-auth/react";
 import { useConversion } from "@/data-access/conversion";
 import Link from "next/link";
-import { AdminSideBarComponent } from "./SidebarNav";
+import { CashierSideBarComponent } from "./SidebarNav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "next-auth/react";
 
@@ -101,7 +101,7 @@ const Sidebar = ({ dashboard }: SidebarProps) => {
       </div>
 
       {/* Dashboard Navigation */}
-      {dashboard === "super_admin" && <AdminSideBarComponent findpath={findpath} />}
+      {dashboard === "cashier" && <CashierSideBarComponent findpath={findpath} />}
 
       {/* User Profile & Logout */}
       <div className="w-full h-[120px] bg-green-800 mt-16 flex items-end justify-center relative rounded-lg">

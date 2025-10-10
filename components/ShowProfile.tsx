@@ -36,6 +36,10 @@ const user = clientSession?.user || serverUser;
       router.push('/agent-dashboard');
     } 
 
+    else if (user?.role === 'cashier') {
+      router.push('/cashier-dashboard');
+    } 
+
     
      else {
       router.push('/employee-dashboard');
