@@ -1,3 +1,4 @@
+ 
 import { getServerSession, NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import jwt from 'jsonwebtoken';
@@ -416,73 +417,147 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      console.log('🔄 JWT callback - trigger:', trigger);
-      console.log('📥 JWT token input:', token);
-      console.log('👤 JWT user input:', user);
+      try {
+        console.log('🔄 JWT callback - trigger:', trigger);
 
-      if (user) {
-        token = { ...token, ...user };
-        console.log('✅ JWT after user merge:', token);
+        if (user) {
+          // Merge user data with production-safe serialization
+          token = {
+            ...token,
+            // Required fields with proper serialization
+            id: String(user.id || ''),
+            userId: String(user.userId || user.id || ''),
+            name: String(user.name || ''),
+            email: String(user.email || ''),
+            role: String(user.role || ''),
+            token: String(user.token || ''),
+            status: String(user.status || 'ACTIVE'),
+            // Optional fields - only include if they exist
+            ...(user.username && { username: String(user.username) }),
+            ...(user.firstname && { firstname: String(user.firstname) }),
+            ...(user.lastname && { lastname: String(user.lastname) }),
+            ...(user.profile_image && { profile_image: String(user.profile_image) }),
+            ...(typeof user.is_temp_password !== 'undefined' && { 
+              is_temp_password: Boolean(user.is_temp_password) 
+            }),
+            ...(typeof user.is_compliance_submitted !== 'undefined' && { 
+              is_compliance_submitted: Boolean(user.is_compliance_submitted) 
+            }),
+            ...(typeof user.loan_unit !== 'undefined' && { 
+              loan_unit: Number(user.loan_unit) 
+            }),
+            ...(typeof user.loan_amount_collected !== 'undefined' && { 
+              loan_amount_collected: Number(user.loan_amount_collected) 
+            }),
+            ...(typeof user.salary_per_month !== 'undefined' && { 
+              salary_per_month: Number(user.salary_per_month) 
+            }),
+            ...(user.government_entity && { 
+              government_entity: String(user.government_entity) 
+            }),
+            ...(user.phone && { phone: String(user.phone) }),
+            ...(user.employee_id && { employee_id: String(user.employee_id) }),
+            ...(user.createdAt && { created_at: String(user.createdAt) }),
+            ...(user.updatedAt && { updated_at: String(user.updatedAt) }),
+          };
+        }
+        
+        if (trigger === "update" && session?.user) {
+          // Handle session updates with serialization
+          token = {
+            ...token,
+            ...Object.fromEntries(
+              Object.entries(session.user).map(([key, value]) => [
+                key,
+                typeof value === 'string' ? String(value) :
+                typeof value === 'number' ? Number(value) :
+                typeof value === 'boolean' ? Boolean(value) :
+                String(value || '')
+              ])
+            )
+          };
+        }
+        
+        return token;
+      } catch (error) {
+        console.error('❌ JWT callback error:', error);
+        return token;
       }
-      
-      if (trigger === "update" && session?.user) {
-        token = { ...token, ...session.user };
-        console.log('🔄 JWT after session update:', token);
-      }
-      
-      return token;
     },
 
     async session({ session, token }) {
-      console.log('🔄 Session callback - token:', token);
-      
-      if (token) {
-        session.user = {
-          ...session.user,
-          id: token.id as string,
-          userId: token.userId as string,
-          name: token.name as string,
-          email: token.email as string,
-          role: token.role as string,
-          token: token.token as string,
-          status: token.status as string,
+      try {
+        console.log('🔄 Session callback - token role:', token.role);
+        
+        // Create a clean, production-safe session object
+        const safeSession = {
+          ...session,
+          user: {
+            // Required fields with guaranteed serialization
+            id: String(token.id || ''),
+            userId: String(token.userId || token.id || ''),
+            name: String(token.name || ''),
+            email: String(token.email || ''),
+            role: String(token.role || ''),
+            token: String(token.token || ''),
+            status: String(token.status || 'ACTIVE'),
+            
+            // Optional fields - only include if they exist
+            ...(token.username && { username: String(token.username) }),
+            ...(token.firstname && { firstname: String(token.firstname) }),
+            ...(token.lastname && { lastname: String(token.lastname) }),
+            ...(token.profile_image && { profile_image: String(token.profile_image) }),
+            ...(typeof token.is_temp_password !== 'undefined' && { 
+              is_temp_password: Boolean(token.is_temp_password) 
+            }),
+            ...(typeof token.is_compliance_submitted !== 'undefined' && { 
+              is_compliance_submitted: Boolean(token.is_compliance_submitted) 
+            }),
+            ...(typeof token.loan_unit !== 'undefined' && { 
+              loan_unit: Number(token.loan_unit) 
+            }),
+            ...(typeof token.loan_amount_collected !== 'undefined' && { 
+              loan_amount_collected: Number(token.loan_amount_collected) 
+            }),
+            ...(typeof token.salary_per_month !== 'undefined' && { 
+              salary_per_month: Number(token.salary_per_month) 
+            }),
+            ...(token.government_entity && { 
+              government_entity: String(token.government_entity) 
+            }),
+            ...(token.phone && { phone: String(token.phone) }),
+            ...(token.employee_id && { employee_id: String(token.employee_id) }),
+            ...(token.createdAt ? { createdAt: String(token.created_at) } : {}),
+            ...(token.updated_at ? { updatedAt: String(token.updated_at) }: {}),
+            
+          }
         };
 
-        // Handle admin, fulfillment officer, and cashier roles (all have similar properties)
-        if (token.role === "super_admin" || token.role === "fulfillment_officer" || token.role === "cashier") {
-          session.user = {
-            ...session.user,
-            username: token.username as string,
-            firstname: token.firstname as string,
-            lastname: token.lastname as string,
-            profile_image: token.profile_image as string,
-            is_temp_password: token.is_temp_password as boolean,
-          };
-
-          // Add cashier-specific fields if available
-          if (token.role === "cashier") {
-            session.user = {
-              ...session.user,
-              createdAt: token.created_at as string,
-              updatedAt: token.updated_at as string,
-            };
+        // Remove any undefined values that might have slipped through
+        Object.keys(safeSession.user).forEach(key => {
+          if (safeSession.user[key as keyof typeof safeSession.user] === undefined) {
+            delete safeSession.user[key as keyof typeof safeSession.user];
           }
-        } else if (token.role === "user") {
-          session.user = {
-            ...session.user,
-            is_compliance_submitted: token.is_compliance_submitted as boolean,
-            loan_unit: token.loan_unit as number,
-            loan_amount_collected: token.loan_amount_collected as number,
-            salary_per_month: token.salary_per_month as number,
-            government_entity: token.government_entity as string,
-            phone: token.phone as string,
-            employee_id: token.employee_id as string,
-          };
-        }
+        });
+
+        console.log('✅ Final session (production-safe):', safeSession);
+        return safeSession;
+        
+      } catch (error) {
+        console.error('❌ Session callback error:', error);
+        // Return minimal safe session on error
+        return {
+          ...session,
+          user: {
+            id: '',
+            name: '',
+            email: '',
+            role: '',
+            token: '',
+            status: 'ERROR'
+          }
+        };
       }
-      
-      console.log('✅ Final session:', session);
-      return session;
     },
 
     async redirect({ url, baseUrl }) {

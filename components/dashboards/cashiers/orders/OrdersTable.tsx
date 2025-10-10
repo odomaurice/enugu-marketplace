@@ -68,24 +68,24 @@ export const columns: ColumnDef<Order>[] = [
       </Badge>
     ),
   },
-  // {
-  //   accessorKey: "paymentStatus",
-  //   header: "Payment",
-  //   cell: ({ row }) => (
-  //     <Badge
-  //       className="bg-orange-700"
-  //       variant={
-  //         row.original.paymentStatus === "PAID"
-  //           ? "secondary"
-  //           : row.original.paymentStatus === "FAILED"
-  //           ? "destructive"
-  //           : "default"
-  //       }
-  //     >
-  //       {row.original.paymentStatus}
-  //     </Badge>
-  //   ),
-  // },
+  {
+    accessorKey: "paymentStatus",
+    header: "Payment",
+    cell: ({ row }) => (
+      <Badge
+        className="bg-orange-700"
+        variant={
+          row.original.paymentStatus === "PAID"
+            ? "secondary"
+            : row.original.paymentStatus === "FAILED"
+            ? "destructive"
+            : "default"
+        }
+      >
+        {row.original.paymentStatus}
+      </Badge>
+    ),
+  },
   {
     id: "actions",
     cell: ({ row }) => (

@@ -7,10 +7,10 @@ declare module "next-auth" {
     userId: string;
     name: string;
     email: string;
-    role: string; // This can now be "super_admin", "fulfillment_officer", or "user"
+    role: string; // This can now be "super_admin", "fulfillment_officer", "cashier", or "user"
     token: string;
     status?: string;
-    is_temp_password?: boolean; // Add this field for fulfillment officers
+    is_temp_password?: boolean;
     
     // Employee-specific fields (optional)
     phone?: string;
@@ -23,7 +23,7 @@ declare module "next-auth" {
     is_address_set?: boolean;
     is_compliance_submitted?: boolean; 
     
-    // Admin-specific fields (optional)
+    // Admin/Cashier-specific fields (optional)
     username?: string;
     firstname?: string;
     lastname?: string;
@@ -63,7 +63,7 @@ declare module "next-auth/jwt" {
     loan_amount_collected?: number;
     is_address_set?: boolean;
     
-    // Admin-specific fields
+    // Admin/Cashier-specific fields
     username?: string;
     firstname?: string;
     lastname?: string;
