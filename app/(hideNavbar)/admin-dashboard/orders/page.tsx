@@ -14,7 +14,7 @@ export default async function OrdersPage() {
     redirect(`/admin-login?callbackUrl=${encodeURIComponent('/admin-dashboard/orders')}`);
   }
 
-  if (session.user.role !== 'admin') {
+  if (session.user.role !== 'super_admin') {
     redirect('/auth/error?error=Unauthorized');
   }
 

@@ -7,7 +7,7 @@ import { CreateWarehouseDialog } from '@/components/dashboards/admin/warehouses/
 export default async function AdminWarehousesPage() {
   const session = await getServerSession(authOptions);
   
-  if (!session?.user || session.user.role !== 'admin') {
+  if (!session?.user || session.user.role !== 'super_admin') {
     redirect('/auth/signin');
   }
 

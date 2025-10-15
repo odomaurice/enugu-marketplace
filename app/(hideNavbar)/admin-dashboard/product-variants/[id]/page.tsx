@@ -31,7 +31,7 @@ export default async function ProductVariantDetailsPage(props: { params: Promise
   
   const session = await getServerSession(authOptions);
   
-  if (!session?.user || session.user.role !== 'admin') {
+  if (!session?.user || session.user.role !== 'super_admin') {
     redirect('/auth/signin');
   }
 

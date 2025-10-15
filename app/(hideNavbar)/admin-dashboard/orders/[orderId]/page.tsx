@@ -24,7 +24,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
     redirect(`/admin-login?callbackUrl=${encodeURIComponent(`/admin-dashboard/orders/${orderId}`)}`);
   }
 
-  if (session.user.role !== 'admin') {
+  if (session.user.role !== 'super_admin') {
     redirect('/auth/error?error=Unauthorized');
   }
 
