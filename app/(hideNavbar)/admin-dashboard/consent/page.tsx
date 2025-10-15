@@ -61,7 +61,7 @@ export default function AdminCompliancePage() {
 
   // Redirect if not admin
   useEffect(() => {
-    if (status === "authenticated" && user?.role !== "admin") {
+    if (status === "authenticated" && user?.role !== "super_admin") {
       redirect("/unauthorized");
     }
   }, [user, status]);
