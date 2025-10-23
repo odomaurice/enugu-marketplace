@@ -53,6 +53,16 @@ interface Product {
   reviewCount?: number;
 }
 
+// Helper function to shuffle array randomly
+const shuffleArray = (array: any[]) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 const ProductInstance = () => {
   const [wishlistItems, setWishlistItems] = useState<string[]>([]);
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
@@ -65,7 +75,7 @@ const ProductInstance = () => {
   const [returnUrl, setReturnUrl] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [perishableFilter, setPerishableFilter] = useState<string>("all");
-  const [sortOption, setSortOption] = useState<string>("name-asc");
+  const [sortOption, setSortOption] = useState<string>("random");
   
   const router = useRouter();
 
@@ -77,16 +87,22 @@ const ProductInstance = () => {
   const { data: products, isLoading: isLoadingProducts } = useQuery({
     queryKey: ["featured-products"],
     queryFn: async () => {
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/products?limit=20`
-      );
-      // Add mock ratings to match the image
-      const productsWithRatings = res.data.data.map((product: Product) => ({
-        ...product,
-        rating: Math.floor(Math.random() * 2) + 4, // Random rating between 4-5
-        reviewCount: Math.floor(Math.random() * 50) + 10, // Random reviews between 10-60
-      }));
-      return productsWithRatings as Product[];
+      try {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/products?limit=20`
+        );
+        // Add mock ratings to match the image
+        const productsWithRatings = res.data.data.map((product: Product) => ({
+          ...product,
+          rating: Math.floor(Math.random() * 2) + 4, // Random rating between 4-5
+          reviewCount: Math.floor(Math.random() * 50) + 10, // Random reviews between 10-60
+        }));
+        return productsWithRatings as Product[];
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+        toast.error("Failed to load products");
+        return [];
+      }
     },
   });
 
@@ -114,10 +130,18 @@ const ProductInstance = () => {
         return a.basePrice - b.basePrice;
       case "price-desc":
         return b.basePrice - a.basePrice;
+      case "random":
+        // For random sorting, we'll handle it after with shuffleArray
+        return 0;
       default:
         return 0;
     }
   });
+
+  // Apply random shuffle if random sort is selected
+  const finalProducts = sortOption === "random" && filteredProducts 
+    ? shuffleArray(filteredProducts) 
+    : filteredProducts;
 
   // Fetch user session (same as your products page)
   useEffect(() => {
@@ -139,30 +163,48 @@ const ProductInstance = () => {
   const isAdmin = user?.role === "super_admin";
   const isAgent = user?.role === "fulfillment_officer";
 
+  // Fixed fetchCartCount with better error handling
   useEffect(() => {
     if (user?.token) {
       const fetchCartCount = async () => {
         try {
           const res = await axios.get(
             `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/cart`,
-            { headers: { Authorization: `Bearer ${user.token}` } }
+            { 
+              headers: { Authorization: `Bearer ${user.token}` },
+              timeout: 10000 // 10 second timeout
+            }
           );
-          cartStore.setCartCount(res.data.data?.items?.length || 0);
-        } catch (error) {
-          console.error("Failed to fetch cart count", error);
+          
+          // Check if response has the expected structure
+          if (res.data && res.data.data) {
+            const cartItems = res.data.data?.items || [];
+            cartStore.setCartCount(cartItems.length);
+          }
+        } catch (error: any) {
+          // Don't show error toast for 500 errors to avoid spamming users
+          if (error.response?.status !== 500) {
+            console.error("Failed to fetch cart count", error);
+          }
+          // Set cart count to 0 on error
+          cartStore.setCartCount(0);
         }
       };
       fetchCartCount();
+    } else {
+      // If no user, set cart count to 0
+      cartStore.setCartCount(0);
     }
   }, [user]);
 
   // Fetch compliance data and wishlist items when user changes (only for non-admins)
   useEffect(() => {
     if (user?.token && !isAdmin && !isAgent) {
-      // Fetch compliance data
+      // Fetch compliance data with error handling
       axios
         .get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/get-compliance`, {
           headers: { Authorization: `Bearer ${user.token}` },
+          timeout: 10000
         })
         .then((response) => {
           setComplianceData(response.data.data);
@@ -172,17 +214,21 @@ const ProductInstance = () => {
           setComplianceData(null);
         });
 
-      // Fetch wishlist items
+      // Fetch wishlist items with error handling
       const fetchWishlist = async () => {
         try {
           const res = await axios.get(
             `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/wishlist`,
-            { headers: { Authorization: `Bearer ${user.token}` } }
+            { 
+              headers: { Authorization: `Bearer ${user.token}` },
+              timeout: 10000
+            }
           );
           const items = res.data.data.map((item: any) => item.productId);
           setWishlistItems(items);
         } catch (error) {
           console.error("Failed to fetch wishlist", error);
+          // Don't show error toast for wishlist failures
         }
       };
       fetchWishlist();
@@ -267,7 +313,10 @@ const ProductInstance = () => {
         // Find and remove the item
         const wishlistRes = await axios.get(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/wishlist`,
-          { headers: { Authorization: `Bearer ${user.token}` } }
+          { 
+            headers: { Authorization: `Bearer ${user.token}` },
+            timeout: 10000
+          }
         );
         const itemToRemove = wishlistRes.data.data.find(
           (item: any) => item.productId === productId
@@ -276,14 +325,20 @@ const ProductInstance = () => {
         if (itemToRemove) {
           await axios.delete(
             `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/wishlist/remove-from-wishlist/${itemToRemove.id}`,
-            { headers: { Authorization: `Bearer ${user.token}` } }
+            { 
+              headers: { Authorization: `Bearer ${user.token}` },
+              timeout: 10000
+            }
           );
         }
       } else {
         await axios.post(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/wishlist/add-to-wishlist`,
           payload,
-          { headers: { Authorization: `Bearer ${user.token}` } }
+          { 
+            headers: { Authorization: `Bearer ${user.token}` },
+            timeout: 10000
+          }
         );
       }
 
@@ -368,6 +423,7 @@ const ProductInstance = () => {
             Authorization: `Bearer ${user.token}`,
             "Content-Type": "application/json",
           },
+          timeout: 10000
         }
       );
 
@@ -394,6 +450,7 @@ const ProductInstance = () => {
       axios
         .get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/user/get-compliance`, {
           headers: { Authorization: `Bearer ${user.token}` },
+          timeout: 10000
         })
         .then((response) => {
           setComplianceData(response.data.data);
@@ -436,7 +493,7 @@ const ProductInstance = () => {
         <section className="py-12">
           <div className="container px-4 mx-auto">
             <div className="text-center mb-10">
-              <div className="inline-flex items-center rounded-full bg-orange-100 px-4 py-2 text-sm font-medium text-orange-700 mb-4">
+              <div className="inline-flex items-center rounded-full bg-orange-100 px-4 py-2 text-sm font-medium text-green-700 mb-4">
                 <Sparkles className="h-4 w-4 mr-2" />
                 Featured Products
               </div>
@@ -474,6 +531,7 @@ const ProductInstance = () => {
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="random">Random</SelectItem>
                   <SelectItem value="name-asc">Name (A-Z)</SelectItem>
                   <SelectItem value="name-desc">Name (Z-A)</SelectItem>
                   <SelectItem value="price-asc">Price (Low to High)</SelectItem>
@@ -483,7 +541,10 @@ const ProductInstance = () => {
             </div>
 
             {/* Results count */}
-           
+            {/* <div className="mb-6 text-sm text-gray-600">
+              Showing {finalProducts?.length || 0} of {products?.length || 0} products
+              {(searchQuery || perishableFilter !== "all") && " (filtered)"}
+            </div> */}
 
             {/* Compliance Status Banners - Only show for non-admin users */}
             {!user && !isAdmin && !isAgent && user && !complianceData && (
@@ -530,23 +591,23 @@ const ProductInstance = () => {
             )}
 
             {/* Admin notice banner */}
-            {/* {isAdmin && (
-              <div className="bg-purple-100 border-l-4 border-purple-500 text-purple-700 p-4 mb-6 rounded-lg">
+            {isAdmin && (
+              <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-lg">
                 <div className="flex items-center">
                   <Info className="h-5 w-5 mr-2" />
-                  <p>Admin view: Cart and wishlist features are disabled.</p>
+                  <p>Admin view: Cart and wishlist features are disabled for Admins.</p>
                 </div>
               </div>
-            )} */}
+            )}
 
-            {/* {isAgent && (
-              <div className="bg-purple-100 border-l-4 border-purple-500 text-purple-700 p-4 mb-6 rounded-lg">
+            {isAgent && (
+              <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-lg">
                 <div className="flex items-center">
                   <Info className="h-5 w-5 mr-2" />
                   <p>Agent view: Cart and wishlist features are disabled.</p>
                 </div>
               </div>
-            )} */}
+            )}
 
             {isLoadingProducts ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -566,9 +627,9 @@ const ProductInstance = () => {
                   </Card>
                 ))}
               </div>
-            ) : filteredProducts && filteredProducts.length > 0 ? (
+            ) : finalProducts && finalProducts.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {filteredProducts.map((product: Product) => (
+                {finalProducts.map((product: Product) => (
                   <Card
                     key={product.id}
                     className="h-full flex flex-col overflow-hidden border-0 shadow-md transition-all duration-300 hover:shadow-lg group"
