@@ -61,4 +61,6 @@ export interface UserWithRelations {
   orders: Order[];
   cart_items: any[];
   wishlist: WishlistItem[];
+  status?: string;
+
 }

@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, useReactTable } from "@tanstack/react-table";
 import axios from "axios";
-import { Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Download } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserWithRelations } from "@/types/index";
+import { useState, useMemo } from "react";
 
 const columns: ColumnDef<UserWithRelations>[] = [
   {
@@ -112,8 +113,22 @@ interface AdminUsersTableProps {
   token: string;
 }
 
+interface ExportData {
+  "Employee ID": string;
+  "Verification ID": string;
+  "Name": string;
+  "Email": string;
+  "Phone": string;
+  "Government Entity": string;
+  "Salary (₦)": string;
+  "Purchasing Unit (₦)": string;
+  "Purchasing Unit Taken (₦)": string;
+  "Status": string;
+}
+
 export function AdminUsersTable({ initialUsers, token }: AdminUsersTableProps) {
   const router = useRouter();
+  const [selectedEntity, setSelectedEntity] = useState<string>("all");
 
   const { data: users = initialUsers, isLoading, isError, error } = useQuery({
     queryKey: ["admin-users", token],
@@ -144,15 +159,124 @@ export function AdminUsersTable({ initialUsers, token }: AdminUsersTableProps) {
     retry: false
   });
 
+  // Get unique government entities for the filter
+  const governmentEntities = useMemo(() => {
+    const entities = Array.from(new Set(
+      users.map((user: UserWithRelations) => user.government_entity).filter(Boolean) as string[]
+    ));
+    return entities.sort();
+  }, [users]);
+
+  // Filter users by selected government entity
+  const filteredUsers = useMemo(() => {
+    if (selectedEntity === "all") {
+      return users;
+    }
+    return users.filter((user: UserWithRelations) => user.government_entity === selectedEntity);
+  }, [users, selectedEntity]);
+
+  // Function to export users to CSV
+  const exportToCSV = (usersToExport: UserWithRelations[], filename: string) => {
+    const headers: (keyof ExportData)[] = [
+      "Employee ID",
+      "Verification ID", 
+      "Name",
+      "Email",
+      "Phone",
+      "Government Entity",
+      "Salary (₦)",
+      "Purchasing Unit (₦)",
+      "Purchasing Unit Taken (₦)",
+      "Status"
+    ];
+
+    const csvData = usersToExport.map((user: UserWithRelations) => ({
+      "Employee ID": user.employee_id || "N/A",
+      "Verification ID": user.verification_id || "N/A",
+      "Name": `${user.firstname || ''} ${user.lastname || ''}`.trim() || "N/A",
+      "Email": user.email || "N/A",
+      "Phone": user.phone || "N/A",
+      "Government Entity": user.government_entity || "N/A",
+      "Salary (₦)": new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency: 'NGN'
+      }).format(parseFloat(user.salary_per_month?.toString() || "0")),
+      "Purchasing Unit (₦)": new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency: 'NGN'
+      }).format(parseFloat(user.loan_unit?.toString() || "0")),
+      "Purchasing Unit Taken (₦)": new Intl.NumberFormat('en-NG', {
+        style: 'currency',
+        currency: 'NGN'
+      }).format(parseFloat(user.loan_amount_collected?.toString() || "0")),
+      "Status": user.status || "PENDING"
+    }));
+
+    // Convert to CSV
+    const csvContent = [
+      headers.join(","),
+      ...csvData.map(row => 
+        headers.map(header => {
+          const value = row[header];
+          // Escape quotes and wrap in quotes if contains comma
+          return `"${String(value).replace(/"/g, '""')}"`;
+        }).join(",")
+      )
+    ].join("\n");
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `${filename}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast.success(`Exported ${usersToExport.length} users to ${filename}.csv`);
+  };
+
+  // Export current filtered users
+  const exportCurrentUsers = () => {
+    if (filteredUsers.length === 0) {
+      toast.error("No users to export");
+      return;
+    }
+
+    const filename = selectedEntity === "all" 
+      ? `all_users_${new Date().toISOString().split('T')[0]}`
+      : `${selectedEntity.replace(/[^a-zA-Z0-9]/g, '_')}_users_${new Date().toISOString().split('T')[0]}`;
+    
+    exportToCSV(filteredUsers, filename);
+  };
+
+  // Export all users by entity
+  const exportAllByEntity = () => {
+    governmentEntities.forEach(entity => {
+      const entityUsers = users.filter((user: UserWithRelations) => user.government_entity === entity);
+      if (entityUsers.length > 0) {
+        const filename = `${entity.replace(/[^a-zA-Z0-9]/g, '_')}_users_${new Date().toISOString().split('T')[0]}`;
+        exportToCSV(entityUsers, filename);
+      }
+    });
+    
+    // Small delay between downloads to avoid browser restrictions
+    setTimeout(() => {
+      toast.success(`Exported users for ${governmentEntities.length} government entities`);
+    }, 1000);
+  };
+
   const table = useReactTable({
-    data: users,
+    data: filteredUsers,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     initialState: {
       pagination: {
-        pageSize: 5, // Default page size
+        pageSize: 5,
       },
     },
   });
@@ -186,37 +310,138 @@ export function AdminUsersTable({ initialUsers, token }: AdminUsersTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <Input
-          placeholder="Filter by any field..."
-          value={(table.getState().globalFilter as string) ?? ""}
-          onChange={(event) => {
-            table.setGlobalFilter(event.target.value); 
-          }}
-          className="max-w-sm"
-        />
-        <div className="flex items-center space-x-2">
-          <p className="text-sm text-gray-600">Rows per page:</p>
-          <Select
-            value={`${table.getState().pagination.pageSize}`}
-            onValueChange={(value) => {
-              table.setPageSize(Number(value));
+      {/* Header with Filters and Export Buttons */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-4 flex-1 min-w-[300px]">
+          <Input
+            placeholder="Filter by any field..."
+            value={(table.getState().globalFilter as string) ?? ""}
+            onChange={(event) => {
+              table.setGlobalFilter(event.target.value); 
             }}
+            className="max-w-sm"
+          />
+          
+          {/* Government Entity Filter */}
+          <Select
+            value={selectedEntity}
+            onValueChange={setSelectedEntity}
           >
-            <SelectTrigger className="h-8 w-[70px]">
-              <SelectValue placeholder={table.getState().pagination.pageSize} />
+            <SelectTrigger className="w-[250px]">
+              <SelectValue placeholder="Filter by Government Entity" />
             </SelectTrigger>
-            <SelectContent side="top">
-              {[5, 10, 20, 30, 40, 50].map((pageSize) => (
-                <SelectItem key={pageSize} value={`${pageSize}`}>
-                  {pageSize}
+            <SelectContent>
+              <SelectItem value="all">All Government Entities</SelectItem>
+              {governmentEntities.map((entity: string) => (
+                <SelectItem key={entity} value={entity}>
+                  {entity}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+
+        <div className="flex items-center gap-2">
+          {/* Export Current Users */}
+          <Button
+            onClick={exportCurrentUsers}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+            disabled={filteredUsers.length === 0}
+          >
+            <Download className="w-4 h-4" />
+            Export Current
+          </Button>
+
+          {/* Export All by Entity */}
+          <Button
+            onClick={exportAllByEntity}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+            disabled={users.length === 0}
+          >
+            <Download className="w-4 h-4" />
+            Export All by Entity
+          </Button>
+
+          {/* Rows per page selector */}
+          <div className="flex items-center space-x-2">
+            <p className="text-sm text-gray-600">Rows:</p>
+            <Select
+              value={`${table.getState().pagination.pageSize}`}
+              onValueChange={(value) => {
+                table.setPageSize(Number(value));
+              }}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue placeholder={table.getState().pagination.pageSize} />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[5, 10, 20, 30, 40, 50].map((pageSize) => (
+                  <SelectItem key={pageSize} value={`${pageSize}`}>
+                    {pageSize}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
 
+      {/* Entity Summary and Quick Export */}
+      <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-blue-800">
+            Showing {filteredUsers.length} of {users.length} users
+            {selectedEntity !== "all" && ` from ${selectedEntity}`}
+          </p>
+          
+          {selectedEntity !== "all" && filteredUsers.length > 0 && (
+            <Button
+              onClick={() => exportToCSV(
+                filteredUsers, 
+                `${selectedEntity.replace(/[^a-zA-Z0-9]/g, '_')}_users_${new Date().toISOString().split('T')[0]}`
+              )}
+              variant="ghost"
+              size="sm"
+              className="text-blue-700 hover:text-blue-800 hover:bg-blue-100 flex items-center gap-1"
+            >
+              <Download className="w-3 h-3" />
+              Export {selectedEntity}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Government Entities Quick Export Panel */}
+      <div className="bg-gray-50 p-4 rounded-lg border">
+        <h3 className="text-sm font-semibold text-gray-700 mb-2">Quick Export by Government Entity:</h3>
+        <div className="flex flex-wrap gap-2">
+          {governmentEntities.map((entity: string) => {
+            const entityUsers = users.filter((user: UserWithRelations) => user.government_entity === entity);
+            return (
+              <Button
+                key={entity}
+                onClick={() => exportToCSV(
+                  entityUsers,
+                  `${entity.replace(/[^a-zA-Z0-9]/g, '_')}_users_${new Date().toISOString().split('T')[0]}`
+                )}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1 text-xs"
+                disabled={entityUsers.length === 0}
+              >
+                <Download className="w-3 h-3" />
+                {entity} ({entityUsers.length})
+              </Button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Users Table */}
       <div className="rounded-md border shadow-sm">
         <Table className="min-w-[1200px]">
           <TableHeader className="bg-gray-50">
@@ -260,14 +485,15 @@ export function AdminUsersTable({ initialUsers, token }: AdminUsersTableProps) {
         </Table>
       </div>
 
+      {/* Pagination */}
       <div className="flex items-center justify-between px-2">
         <div className="flex-1 text-sm text-gray-600">
           Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{" "}
           {Math.min(
             (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-            users.length
+            filteredUsers.length
           )}{" "}
-          of {users.length} entries
+          of {filteredUsers.length} entries
         </div>
         <div className="flex items-center space-x-2">
           <Button
