@@ -23,7 +23,7 @@ export default function SetPassword() {
   const searchParams = useSearchParams();
   const userId = searchParams.get('userId');
   const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,8 +60,8 @@ export default function SetPassword() {
       }
 
       // Get the returnUrl from query params
-    const searchParams = new URLSearchParams(window.location.search);
-    const returnUrl = searchParams.get('returnUrl') || '/employee-dashboard';
+      const searchParams = new URLSearchParams(window.location.search);
+      const returnUrl = searchParams.get('returnUrl') || '/employee-dashboard';
 
       // Redirect to OTP verification after successful password set
       window.location.href = `/auth/verify-otp?userId=${userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
@@ -74,7 +74,7 @@ export default function SetPassword() {
     }
   }
 
-   const togglePasswordVisibility = () => {
+  const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
@@ -92,19 +92,18 @@ export default function SetPassword() {
                   <FormLabel>Password</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Input  type={showPassword ? "text" : "password"} placeholder="Enter password" {...field} />
-
+                      <Input type={showPassword ? "text" : "password"} placeholder="Enter password" {...field} />
                       <button
-                      type="button"
-                      onClick={togglePasswordVisibility}
-                      className="absolute top-2 right-4 border-none bg-transparent cursor-pointer"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="text-orange-700 h-4 w-4" />
-                      ) : (
-                        <Eye className="text-orange-700 h-4 w-4" />
-                      )}
-                    </button>
+                        type="button"
+                        onClick={togglePasswordVisibility}
+                        className="absolute top-2 right-4 border-none bg-transparent cursor-pointer"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="text-orange-700 h-4 w-4" />
+                        ) : (
+                          <Eye className="text-orange-700 h-4 w-4" />
+                        )}
+                      </button>
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -118,19 +117,19 @@ export default function SetPassword() {
                 <FormItem>
                   <FormLabel>Confirm Password</FormLabel>
                   <FormControl>
-                     <div className="relative">
-                    <Input  type={showPassword ? "text" : "password"} placeholder="Confirm password" {...field} />
-                    <button
-                      type="button"
-                      onClick={togglePasswordVisibility}
-                      className="absolute top-2 right-4 border-none bg-transparent cursor-pointer"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="text-orange-700 h-4 w-4" />
-                      ) : (
-                        <Eye className="text-orange-700 h-4 w-4" />
-                      )}
-                    </button>
+                    <div className="relative">
+                      <Input type={showPassword ? "text" : "password"} placeholder="Confirm password" {...field} />
+                      <button
+                        type="button"
+                        onClick={togglePasswordVisibility}
+                        className="absolute top-2 right-4 border-none bg-transparent cursor-pointer"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="text-orange-700 h-4 w-4" />
+                        ) : (
+                          <Eye className="text-orange-700 h-4 w-4" />
+                        )}
+                      </button>
                     </div>
                   </FormControl>
                   <FormMessage />
