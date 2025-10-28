@@ -50,6 +50,8 @@ export default function EmployeeLogin() {
         window.location.href = `/auth/set-password?userId=${data.userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
       } else if (data.nextStep === 'verify_password') {
         window.location.href = `/auth/verify-password?userId=${data.userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
+      } else if (data.nextStep === 'set_phone_number') {
+        window.location.href = `/auth/set-phone-number?userId=${data.userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
       } else {
         throw new Error('Unexpected next step from server');
       }
@@ -74,7 +76,7 @@ export default function EmployeeLogin() {
               name="identifier"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email, Employee ID or Phone Number</FormLabel>
+                  <FormLabel>Email, Verification ID, Employee ID or Phone Number</FormLabel>
                   <FormControl>
                     <Input placeholder="Enter your identifier" {...field} />
                   </FormControl>
