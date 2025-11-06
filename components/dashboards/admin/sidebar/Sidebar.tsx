@@ -88,7 +88,7 @@ const Sidebar = ({ dashboard }: SidebarProps) => {
       <div>
         <Link href="/" className="flex items-center">
         <Image
-                      src={"/logo.png"}
+                      src={"/logo2.png"}
                       alt="logo"
                       width={50}
                       height={50}
