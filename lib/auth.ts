@@ -1,11 +1,21 @@
- 
 import { getServerSession, NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import jwt from 'jsonwebtoken';
 
+// Enhanced error handling
+class AuthError extends Error {
+  constructor(message: string, public code?: string) {
+    super(message);
+    this.name = 'AuthError';
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
   secret: process.env.NEXTAUTH_SECRET,
+  
+  // Remove basePath for Next.js 15 - it's deprecated
+  // The API routes will automatically be at /api/auth/*
   
   session: {
     strategy: "jwt",
@@ -29,12 +39,15 @@ export const authOptions: NextAuthOptions = {
         identifier: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         try {
-          console.log('🔐 Admin login attempt with:', {
-            identifier: credentials?.identifier,
-            hasPassword: !!credentials?.password
-          });
+          console.log('🔐 Admin login attempt started');
+
+          if (!credentials?.identifier || !credentials?.password) {
+            throw new AuthError('Email and password are required', 'MISSING_CREDENTIALS');
+          }
+
+          console.log('📡 Calling API:', `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/admin-login`);
 
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/admin-login`,
@@ -45,36 +58,31 @@ export const authOptions: NextAuthOptions = {
                 'Accept': 'application/json'
               },
               body: JSON.stringify({
-                identifier: credentials?.identifier,
-                password: credentials?.password
+                identifier: credentials.identifier,
+                password: credentials.password
               }),
             }
           );
 
           const data = await response.json();
           
-          console.log('📡 Admin API Response:', {
-            status: response.status,
-            success: data.success,
-            message: data.message,
-            hasToken: !!data.token,
-            hasAdminData: !!data.admin,
-            fullResponse: data
-          });
+          console.log('📡 Admin API Response status:', response.status);
+          console.log('📡 Admin API Response data:', JSON.stringify(data, null, 2));
 
           if (!response.ok) {
-            console.log('❌ API returned error status:', response.status);
-            throw new Error(data.message || `Login failed with status: ${response.status}`);
+            console.log('❌ API error response:', data);
+            const errorMessage = data.message || `Login failed with status: ${response.status}`;
+            throw new AuthError(errorMessage, 'API_ERROR');
           }
 
           if (!data.success) {
-            console.log('❌ API returned success: false');
-            throw new Error(data.message || 'Login failed');
+            console.log('❌ API success: false', data);
+            throw new AuthError(data.message || 'Login failed', 'LOGIN_FAILED');
           }
 
           if (!data.token) {
             console.log('❌ No token in response');
-            throw new Error('No authentication token received');
+            throw new AuthError('No authentication token received', 'NO_TOKEN');
           }
 
           let adminData: any = null;
@@ -97,11 +105,11 @@ export const authOptions: NextAuthOptions = {
           }
 
           if (!adminData) {
-            console.log('❌ No admin data found in token or response');
-            throw new Error('No admin data received');
+            console.log('❌ No admin data found');
+            throw new AuthError('No admin data received', 'NO_USER_DATA');
           }
 
-          console.log('✅ Admin data extracted:', {
+          console.log('✅ Admin data extracted successfully:', {
             id: adminData.id,
             email: adminData.email,
             name: `${adminData.firstname} ${adminData.lastname}`,
@@ -110,11 +118,11 @@ export const authOptions: NextAuthOptions = {
 
           const role = adminData.role === 'fulfillment_officer' ? 'fulfillment_officer' : 'super_admin';
 
-          return {
+          const user = {
             id: adminData.id?.toString() || 'admin-id',
             userId: adminData.id?.toString(),
             name: `${adminData.firstname || adminData.firstName || adminData.firtname || ''} ${adminData.lastname || adminData.lastName || ''}`.trim(),
-            email: adminData.email || adminData.mail || credentials?.identifier,
+            email: adminData.email || adminData.mail || credentials.identifier,
             role: role,
             token: data.token,
             username: adminData.username,
@@ -124,9 +132,20 @@ export const authOptions: NextAuthOptions = {
             is_temp_password: adminData.is_temp_password,
             status: adminData.status || "ACTIVE"
           };
+
+          console.log('✅ Returning user object for admin');
+          return user;
+
         } catch (error: any) {
-          console.error('💥 Admin auth error:', error.message);
-          throw new Error(error.message || 'Admin authentication failed');
+          console.error('💥 Admin auth error:', {
+            message: error.message,
+            code: error.code
+          });
+          
+          if (error instanceof AuthError) {
+            throw error;
+          }
+          throw new AuthError(error.message || 'Admin authentication failed', 'UNKNOWN_ERROR');
         }
       },
     }),
@@ -138,11 +157,13 @@ export const authOptions: NextAuthOptions = {
         identifier: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         try {
-          console.log('🔐 Fulfillment officer login attempt with:', {
-            identifier: credentials?.identifier
-          });
+          console.log('🔐 Fulfillment officer login attempt started');
+
+          if (!credentials?.identifier || !credentials?.password) {
+            throw new AuthError('Email and password are required', 'MISSING_CREDENTIALS');
+          }
 
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/fulfillment-officer-login`,
@@ -153,23 +174,32 @@ export const authOptions: NextAuthOptions = {
                 'Accept': 'application/json'
               },
               body: JSON.stringify({
-                identifier: credentials?.identifier,
-                password: credentials?.password
+                identifier: credentials.identifier,
+                password: credentials.password
               }),
             }
           );
 
           const data = await response.json();
           
-          console.log('📡 Fulfillment officer API Response:', {
-            status: response.status,
-            success: data.success,
-            message: data.message,
-            hasToken: !!data.token
-          });
+          console.log('📡 Fulfillment officer API Response status:', response.status);
 
-          if (!response.ok || !data.success) {
-            throw new Error(data.message || 'Fulfillment officer login failed');
+          if (!response.ok) {
+            console.log('❌ API error response:', data);
+            throw new AuthError(
+              data.message || `Login failed with status: ${response.status}`, 
+              'API_ERROR'
+            );
+          }
+
+          if (!data.success) {
+            console.log('❌ API success: false', data);
+            throw new AuthError(data.message || 'Fulfillment officer login failed', 'LOGIN_FAILED');
+          }
+
+          if (!data.token) {
+            console.log('❌ No token in response');
+            throw new AuthError('No authentication token received', 'NO_TOKEN');
           }
 
           let adminData: any = null;
@@ -192,12 +222,13 @@ export const authOptions: NextAuthOptions = {
           }
 
           if (!adminData) {
-            throw new Error('No admin data received');
+            console.log('❌ No admin data found');
+            throw new AuthError('No admin data received', 'NO_USER_DATA');
           }
 
           console.log('✅ Fulfillment officer data extracted:', adminData);
 
-          return {
+          const user = {
             id: adminData.id?.toString(),
             userId: adminData.id?.toString(),
             name: `${adminData.firstname || adminData.firstName || adminData.firtname || ''} ${adminData.lastname || adminData.lastName || ''}`.trim(),
@@ -211,9 +242,17 @@ export const authOptions: NextAuthOptions = {
             is_temp_password: adminData.is_temp_password,
             status: adminData.status || "ACTIVE"
           };
+
+          console.log('✅ Returning user object for fulfillment officer:', user);
+          return user;
+
         } catch (error: any) {
           console.error('💥 Fulfillment officer auth error:', error);
-          throw new Error(error.message || 'Fulfillment officer authentication failed');
+          
+          if (error instanceof AuthError) {
+            throw error;
+          }
+          throw new AuthError(error.message || 'Fulfillment officer authentication failed', 'UNKNOWN_ERROR');
         }
       },
     }),
@@ -225,12 +264,13 @@ export const authOptions: NextAuthOptions = {
         identifier: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         try {
-          console.log('🔐 Cashier login attempt with:', {
-            identifier: credentials?.identifier,
-            hasPassword: !!credentials?.password
-          });
+          console.log('🔐 Cashier login attempt started');
+
+          if (!credentials?.identifier || !credentials?.password) {
+            throw new AuthError('Email and password are required', 'MISSING_CREDENTIALS');
+          }
 
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/cashier-login`,
@@ -241,36 +281,32 @@ export const authOptions: NextAuthOptions = {
                 'Accept': 'application/json'
               },
               body: JSON.stringify({
-                identifier: credentials?.identifier,
-                password: credentials?.password
+                identifier: credentials.identifier,
+                password: credentials.password
               }),
             }
           );
 
           const data = await response.json();
           
-          console.log('📡 Cashier API Response:', {
-            status: response.status,
-            success: data.success,
-            message: data.message,
-            hasToken: !!data.token,
-            hasCashierData: !!data.cashier,
-            fullResponse: data
-          });
+          console.log('📡 Cashier API Response status:', response.status);
 
           if (!response.ok) {
-            console.log('❌ API returned error status:', response.status);
-            throw new Error(data.message || `Cashier login failed with status: ${response.status}`);
+            console.log('❌ API error response:', data);
+            throw new AuthError(
+              data.message || `Cashier login failed with status: ${response.status}`, 
+              'API_ERROR'
+            );
           }
 
           if (!data.success) {
-            console.log('❌ API returned success: false');
-            throw new Error(data.message || 'Cashier login failed');
+            console.log('❌ API success: false', data);
+            throw new AuthError(data.message || 'Cashier login failed', 'LOGIN_FAILED');
           }
 
           if (!data.token) {
             console.log('❌ No token in response');
-            throw new Error('No authentication token received');
+            throw new AuthError('No authentication token received', 'NO_TOKEN');
           }
 
           let cashierData: any = null;
@@ -293,8 +329,8 @@ export const authOptions: NextAuthOptions = {
           }
 
           if (!cashierData) {
-            console.log('❌ No cashier data found in token or response');
-            throw new Error('No cashier data received');
+            console.log('❌ No cashier data found');
+            throw new AuthError('No cashier data received', 'NO_USER_DATA');
           }
 
           console.log('✅ Cashier data extracted:', {
@@ -304,11 +340,11 @@ export const authOptions: NextAuthOptions = {
             role: cashierData.role
           });
 
-          return {
+          const user = {
             id: cashierData.id?.toString() || 'cashier-id',
             userId: cashierData.id?.toString(),
             name: `${cashierData.firstname || cashierData.firstName || cashierData.firtname || ''} ${cashierData.lastname || cashierData.lastName || ''}`.trim(),
-            email: cashierData.email || cashierData.mail || credentials?.identifier,
+            email: cashierData.email || cashierData.mail || credentials.identifier,
             role: "cashier",
             token: data.token,
             username: cashierData.username,
@@ -319,9 +355,17 @@ export const authOptions: NextAuthOptions = {
             created_at: cashierData.created_at,
             updated_at: cashierData.updated_at
           };
+
+          console.log('✅ Returning user object for cashier:', user);
+          return user;
+
         } catch (error: any) {
           console.error('💥 Cashier auth error:', error.message);
-          throw new Error(error.message || 'Cashier authentication failed');
+          
+          if (error instanceof AuthError) {
+            throw error;
+          }
+          throw new AuthError(error.message || 'Cashier authentication failed', 'UNKNOWN_ERROR');
         }
       },
     }),
@@ -333,11 +377,13 @@ export const authOptions: NextAuthOptions = {
         userId: { label: "User ID", type: "text" },
         otp: { label: "OTP", type: "text" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         try {
-          console.log('🔐 Employee OTP verification attempt with:', {
-            userId: credentials?.userId
-          });
+          console.log('🔐 Employee OTP verification attempt started');
+
+          if (!credentials?.userId || !credentials?.otp) {
+            throw new AuthError('User ID and OTP are required', 'MISSING_CREDENTIALS');
+          }
 
           const response = await fetch(
             `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/verify-otp`,
@@ -348,22 +394,32 @@ export const authOptions: NextAuthOptions = {
                 'Accept': 'application/json'
               },
               body: JSON.stringify({
-                userId: credentials?.userId,
-                otp: credentials?.otp
+                userId: credentials.userId,
+                otp: credentials.otp
               }),
             }
           );
 
           const data = await response.json();
           
-          console.log('📡 Employee OTP API Response:', {
-            status: response.status,
-            success: data.success,
-            message: data.message
-          });
-          
-          if (!response.ok || !data.success) {
-            throw new Error(data.message || 'OTP verification failed');
+          console.log('📡 Employee OTP API Response status:', response.status);
+
+          if (!response.ok) {
+            console.log('❌ API error response:', data);
+            throw new AuthError(
+              data.message || `OTP verification failed with status: ${response.status}`, 
+              'API_ERROR'
+            );
+          }
+
+          if (!data.success) {
+            console.log('❌ API success: false', data);
+            throw new AuthError(data.message || 'OTP verification failed', 'LOGIN_FAILED');
+          }
+
+          if (!data.token) {
+            console.log('❌ No token in response');
+            throw new AuthError('No authentication token received', 'NO_TOKEN');
           }
 
           let userData: any = null;
@@ -386,12 +442,13 @@ export const authOptions: NextAuthOptions = {
           }
 
           if (!userData) {
-            throw new Error('No user data received');
+            console.log('❌ No user data found');
+            throw new AuthError('No user data received', 'NO_USER_DATA');
           }
 
           console.log('✅ Employee data extracted:', userData);
 
-          return {
+          const user = {
             id: userData.id?.toString(),
             userId: userData.id?.toString(),
             name: `${userData.firstname || userData.firstName || userData.firtname || ''} ${userData.lastname || userData.lastName || ''}`.trim(),
@@ -407,24 +464,45 @@ export const authOptions: NextAuthOptions = {
             phone: userData.phone,
             employee_id: userData.employee_id
           };
+
+          console.log('✅ Returning user object for employee:', user);
+          return user;
+
         } catch (error: any) {
           console.error('💥 Employee auth error:', error);
-          throw new Error(error.message || 'Employee authentication failed');
+          
+          if (error instanceof AuthError) {
+            throw error;
+          }
+          throw new AuthError(error.message || 'Employee authentication failed', 'UNKNOWN_ERROR');
         }
       }
     })
   ],
 
   callbacks: {
+    async signIn({ user, account, profile, credentials }) {
+      console.log('🔐 SignIn callback - user role:', user?.role);
+      
+      // If user exists, allow sign in
+      if (user) {
+        console.log('✅ SignIn allowed for user:', user.email);
+        return true;
+      }
+      
+      // If no user, redirect to error with proper error message
+      console.log('❌ SignIn denied - no user object');
+      return `/auth/error?error=${encodeURIComponent('Authentication failed: No user data returned')}`;
+    },
+
     async jwt({ token, user, trigger, session }) {
       try {
         console.log('🔄 JWT callback - trigger:', trigger);
 
         if (user) {
-          // Merge user data with production-safe serialization
+          console.log('✅ Adding user data to JWT token');
           token = {
             ...token,
-            // Required fields with proper serialization
             id: String(user.id || ''),
             userId: String(user.userId || user.id || ''),
             name: String(user.name || ''),
@@ -432,7 +510,6 @@ export const authOptions: NextAuthOptions = {
             role: String(user.role || ''),
             token: String(user.token || ''),
             status: String(user.status || 'ACTIVE'),
-            // Optional fields - only include if they exist
             ...(user.username && { username: String(user.username) }),
             ...(user.firstname && { firstname: String(user.firstname) }),
             ...(user.lastname && { lastname: String(user.lastname) }),
@@ -440,42 +517,12 @@ export const authOptions: NextAuthOptions = {
             ...(typeof user.is_temp_password !== 'undefined' && { 
               is_temp_password: Boolean(user.is_temp_password) 
             }),
-            ...(typeof user.is_compliance_submitted !== 'undefined' && { 
-              is_compliance_submitted: Boolean(user.is_compliance_submitted) 
-            }),
-            ...(typeof user.loan_unit !== 'undefined' && { 
-              loan_unit: Number(user.loan_unit) 
-            }),
-            ...(typeof user.loan_amount_collected !== 'undefined' && { 
-              loan_amount_collected: Number(user.loan_amount_collected) 
-            }),
-            ...(typeof user.salary_per_month !== 'undefined' && { 
-              salary_per_month: Number(user.salary_per_month) 
-            }),
-            ...(user.government_entity && { 
-              government_entity: String(user.government_entity) 
-            }),
-            ...(user.phone && { phone: String(user.phone) }),
-            ...(user.employee_id && { employee_id: String(user.employee_id) }),
-            ...(user.createdAt && { created_at: String(user.createdAt) }),
-            ...(user.updatedAt && { updated_at: String(user.updatedAt) }),
           };
         }
         
         if (trigger === "update" && session?.user) {
-          // Handle session updates with serialization
-          token = {
-            ...token,
-            ...Object.fromEntries(
-              Object.entries(session.user).map(([key, value]) => [
-                key,
-                typeof value === 'string' ? String(value) :
-                typeof value === 'number' ? Number(value) :
-                typeof value === 'boolean' ? Boolean(value) :
-                String(value || '')
-              ])
-            )
-          };
+          console.log('🔄 Updating JWT token with session data');
+          token = { ...token, ...session.user };
         }
         
         return token;
@@ -489,11 +536,9 @@ export const authOptions: NextAuthOptions = {
       try {
         console.log('🔄 Session callback - token role:', token.role);
         
-        // Create a clean, production-safe session object
         const safeSession = {
           ...session,
           user: {
-            // Required fields with guaranteed serialization
             id: String(token.id || ''),
             userId: String(token.userId || token.id || ''),
             name: String(token.name || ''),
@@ -501,8 +546,6 @@ export const authOptions: NextAuthOptions = {
             role: String(token.role || ''),
             token: String(token.token || ''),
             status: String(token.status || 'ACTIVE'),
-            
-            // Optional fields - only include if they exist
             ...(token.username && { username: String(token.username) }),
             ...(token.firstname && { firstname: String(token.firstname) }),
             ...(token.lastname && { lastname: String(token.lastname) }),
@@ -510,42 +553,14 @@ export const authOptions: NextAuthOptions = {
             ...(typeof token.is_temp_password !== 'undefined' && { 
               is_temp_password: Boolean(token.is_temp_password) 
             }),
-            ...(typeof token.is_compliance_submitted !== 'undefined' && { 
-              is_compliance_submitted: Boolean(token.is_compliance_submitted) 
-            }),
-            ...(typeof token.loan_unit !== 'undefined' && { 
-              loan_unit: Number(token.loan_unit) 
-            }),
-            ...(typeof token.loan_amount_collected !== 'undefined' && { 
-              loan_amount_collected: Number(token.loan_amount_collected) 
-            }),
-            ...(typeof token.salary_per_month !== 'undefined' && { 
-              salary_per_month: Number(token.salary_per_month) 
-            }),
-            ...(token.government_entity && { 
-              government_entity: String(token.government_entity) 
-            }),
-            ...(token.phone && { phone: String(token.phone) }),
-            ...(token.employee_id && { employee_id: String(token.employee_id) }),
-            ...(token.createdAt ? { createdAt: String(token.created_at) } : {}),
-            ...(token.updated_at ? { updatedAt: String(token.updated_at) }: {}),
-            
           }
         };
 
-        // Remove any undefined values that might have slipped through
-        Object.keys(safeSession.user).forEach(key => {
-          if (safeSession.user[key as keyof typeof safeSession.user] === undefined) {
-            delete safeSession.user[key as keyof typeof safeSession.user];
-          }
-        });
-
-        console.log('✅ Final session (production-safe):', safeSession);
+        console.log('✅ Session created successfully for:', safeSession.user.email);
         return safeSession;
         
       } catch (error) {
         console.error('❌ Session callback error:', error);
-        // Return minimal safe session on error
         return {
           ...session,
           user: {
@@ -563,22 +578,55 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       console.log('🔄 Redirect callback - url:', url, 'baseUrl:', baseUrl);
       
-      if (url.includes('/employee-dashboard')) {
-        const parsedUrl = new URL(url, baseUrl);
-        const returnUrl = parsedUrl.searchParams.get('returnUrl');
-        if (returnUrl) {
-          return `${baseUrl}${returnUrl}`;
-        }
+      // Handle successful authentication redirect
+      if (url.includes('/api/auth/callback') || url.includes('/api/auth/signin')) {
+        console.log('✅ Successful login, redirecting to dashboard');
+        return `${baseUrl}/dashboard`;
       }
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
-      if (new URL(url).origin === baseUrl) return url;
+      
+      // Handle error redirects properly
+      if (url.includes('/api/auth/error')) {
+        try {
+          const errorUrl = new URL(url, baseUrl);
+          const error = errorUrl.searchParams.get('error');
+          
+          console.log('❌ Auth error redirect:', error);
+          
+          if (error) {
+            return `${baseUrl}/auth/error?error=${encodeURIComponent(error)}`;
+          }
+        } catch (e) {
+          console.error('Error parsing error URL:', e);
+        }
+        return `${baseUrl}/auth/error?error=${encodeURIComponent('Authentication failed')}`;
+      }
+      
+      // Allow relative URLs
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      
+      // Allow same-origin URLs
+      try {
+        if (new URL(url).origin === baseUrl) {
+          return url;
+        }
+      } catch (e) {
+        console.error('Invalid URL in redirect:', url);
+      }
+      
+      // Default to base URL
       return baseUrl;
     }
-  }
+  },
 };
 
 export async function getServerUser() {
-  const session = await getServerSession(authOptions);
-  console.log('👤 getServerUser session:', session);
-  return session?.user;
+  try {
+    const session = await getServerSession(authOptions);
+    return session?.user;
+  } catch (error) {
+    console.error('❌ getServerUser error:', error);
+    return null;
+  }
 }

@@ -27,6 +27,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
+import { useState } from "react";
+import OrdersFilter from "../OrdersFilter";
 
 interface OrdersTableProps {
   orders: Order[];
@@ -69,24 +71,6 @@ export const columns: ColumnDef<Order>[] = [
     ),
   },
   {
-    accessorKey: "paymentStatus",
-    header: "Payment",
-    cell: ({ row }) => (
-      <Badge
-        className="bg-orange-700"
-        variant={
-          row.original.paymentStatus === "PAID"
-            ? "secondary"
-            : row.original.paymentStatus === "FAILED"
-            ? "destructive"
-            : "default"
-        }
-      >
-        {row.original.paymentStatus}
-      </Badge>
-    ),
-  },
-  {
     id: "actions",
     cell: ({ row }) => (
       <Button asChild size="sm" variant="ghost">
@@ -100,8 +84,10 @@ export const columns: ColumnDef<Order>[] = [
 ];
 
 export default function OrdersTable({ orders }: OrdersTableProps) {
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>(orders);
+
   const table = useReactTable({
-    data: orders,
+    data: filteredOrders,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -114,6 +100,12 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
 
   return (
     <div>
+      {/* Filter Component */}
+      <OrdersFilter 
+        orders={orders} 
+        onFilterChange={setFilteredOrders} 
+      />
+
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
@@ -153,7 +145,12 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       {/* Pagination Controls */}
       <div className="flex items-center justify-between px-2 mt-4">
         <div className="flex-1 text-sm text-muted-foreground">
-          Showing {table.getRowModel().rows.length} of {orders.length} orders
+          Showing {table.getRowModel().rows.length} of {filteredOrders.length} orders
+          {filteredOrders.length !== orders.length && (
+            <span className="text-blue-600 ml-1">
+              (filtered from {orders.length} total)
+            </span>
+          )}
         </div>
 
         <div className="flex items-center space-x-6 lg:space-x-8">

@@ -43,13 +43,26 @@ interface Product {
   currency: string;
   isPerishable: boolean;
   active: boolean;
+  slug: string;
+  brand: string;
+  shelfLifeDays: number;
+  unit: string;
+  packageType: string;
+  createdAt: string;
+  updatedAt: string;
+  categoryId: string;
 }
 
 interface CartItem {
   id: string;
-  product: Product;
+  userId: string;
+  productId: string;
+  variantId: string | null;
   quantity: number;
-  price: number;
+  addedAt: string;
+  updatedAt: string;
+  product: Product;
+  variant: any;
 }
 
 export default function TransactionPage() {
@@ -93,17 +106,22 @@ export default function TransactionPage() {
   const { data: cart, isLoading: cartLoading } = useQuery({
     queryKey: ["cashier-cart", userId],
     queryFn: async () => {
-      if (!user?.token) return [];
+      if (!user?.token || !userId) return [];
       
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/cashier/cart`,
-        {
-          headers: {
-            Authorization: `Bearer ${user.token}`
+      try {
+        const res = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/cashier/cart/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${user.token}`
+            }
           }
-        }
-      );
-      return res.data.data;
+        );
+        return res.data.data || [];
+      } catch (error) {
+        console.error("Error fetching cart:", error);
+        return [];
+      }
     },
     enabled: !!userId && !!user?.token,
   });
@@ -135,6 +153,24 @@ export default function TransactionPage() {
         return 0;
     }
   });
+
+  // Helper function to get price from cart item
+  const getItemPrice = (item: CartItem): number => {
+    if (!item) return 0;
+    
+    // Price is in product.basePrice based on your API response
+    if (item.product?.basePrice !== undefined && item.product?.basePrice !== null) {
+      return item.product.basePrice;
+    }
+    
+    console.warn("No price found for item:", item);
+    return 0;
+  };
+
+  // Helper function to get item quantity
+  const getItemQuantity = (item: CartItem): number => {
+    return item?.quantity || 0;
+  };
 
   // Add to cart mutation
   const addToCartMutation = useMutation({
@@ -177,7 +213,7 @@ export default function TransactionPage() {
     },
   });
 
-  // Update cart mutation
+  // Update cart mutation - FIXED: Changed from PUT to PATCH
   const updateCartMutation = useMutation({
     mutationFn: async ({
       cartItemId,
@@ -190,7 +226,7 @@ export default function TransactionPage() {
         throw new Error("Authentication required");
       }
 
-      const res = await axios.put(
+      const res = await axios.patch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/cashier/cart/update-cart/${cartItemId}`,
         { userId, quantity },
         {
@@ -206,21 +242,32 @@ export default function TransactionPage() {
       toast.success("Cart updated! ✅");
     },
     onError: (error: any) => {
+      console.error("Update cart error:", error);
       toast.error(error.response?.data?.message || "Failed to update cart");
     },
   });
 
-  // Remove from cart mutation
+  // Remove from cart mutation - FIXED: Added proper payload
   const removeFromCartMutation = useMutation({
     mutationFn: async (cartItemId: string) => {
-      if (!user?.token) {
+      if (!user?.token || !userId) {
         throw new Error("Authentication required");
+      }
+
+      // Find the cart item to get productId and quantity
+      const cartItem = cartItems.find(item => item.id === cartItemId);
+      if (!cartItem) {
+        throw new Error("Cart item not found");
       }
 
       const res = await axios.delete(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/cashier/cart/remove-from-cart/${cartItemId}`,
         { 
-          data: { userId },
+          data: {
+            userId,
+            productId: cartItem.productId,
+            quantity: cartItem.quantity
+          },
           headers: {
             Authorization: `Bearer ${user.token}`
           }
@@ -233,25 +280,30 @@ export default function TransactionPage() {
       toast.success("Item removed from cart 🗑️");
     },
     onError: (error: any) => {
+      console.error("Remove from cart error:", error);
       toast.error(
         error.response?.data?.message || "Failed to remove item from cart"
       );
     },
   });
 
-  // Clear cart mutation
+  // Clear cart mutation 
   const clearCartMutation = useMutation({
     mutationFn: async () => {
-      if (!user?.token) {
+      if (!user?.token || !userId) {
         throw new Error("Authentication required");
       }
 
-      const res = await axios.post(
+      const res = await axios.delete(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/cashier/cart/remove-all-from-cart`,
         {
-          userId,
-        },
-        {
+          data: {
+            userId,
+            items: cartItems.map(item => ({
+              productId: item.productId,
+              quantity: item.quantity
+            }))
+          },
           headers: {
             Authorization: `Bearer ${user.token}`
           }
@@ -264,21 +316,27 @@ export default function TransactionPage() {
       toast.success("Cart cleared! 🧹");
     },
     onError: (error: any) => {
+      console.error("Clear cart error:", error);
       toast.error(error.response?.data?.message || "Failed to clear cart");
     },
   });
 
-  // Create order mutation
+  // Create order mutation - UPDATED with better error handling
   const createOrderMutation = useMutation({
     mutationFn: async () => {
-      if (!user?.token) {
+      if (!user?.token || !userId) {
         throw new Error("Authentication required");
       }
+
+      console.log("Creating order for user:", userId);
+      console.log("Cart items:", cartItems);
 
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/cashier/create-order`,
         {
           userId,
+          // Add addressId if available, otherwise let the backend handle it
+          // addressId: "376c194b-3de4-4801-9b25-05c04e3ad6d9" // Optional
         },
         {
           headers: {
@@ -289,22 +347,41 @@ export default function TransactionPage() {
       return res.data;
     },
     onSuccess: (data) => {
+      console.log("Order created successfully:", data);
       queryClient.invalidateQueries({ queryKey: ["cashier-cart", userId] });
       toast.success("Order created successfully! 🎉");
-      router.push(
-        `/cashier-dashboard/order-confirmation?orderId=${data.data.id}&userId=${userId}`
-      );
+      
+      // Redirect to order confirmation page
+      if (data.data && data.data.id) {
+        router.push(
+          `/cashier-dashboard/order-confirmation?orderId=${data.data.id}&userId=${userId}`
+        );
+      } else {
+        toast.error("Order created but no order ID returned");
+      }
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Failed to create order");
+      console.error("Create order error:", error);
+      const errorMessage = error.response?.data?.message || "Failed to create order";
+      toast.error(errorMessage);
+      
+      // Log detailed error for debugging
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+        console.error("Error response status:", error.response.status);
+      }
     },
   });
 
   const cartItems: CartItem[] = cart || [];
-  const totalAmount = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+
+  // Calculate total amount
+  const totalAmount = cartItems.reduce((sum, item) => {
+    const price = getItemPrice(item);
+    const quantity = getItemQuantity(item);
+    const itemTotal = price * quantity;
+    return sum + itemTotal;
+  }, 0);
 
   const handleAddToCart = (productId: string) => {
     if (!user?.token) {
@@ -324,6 +401,12 @@ export default function TransactionPage() {
       toast.error("Cart is empty. Add some products first!");
       return;
     }
+    
+    console.log("Initiating checkout...");
+    console.log("User ID:", userId);
+    console.log("Cart items count:", cartItems.length);
+    console.log("Total amount:", totalAmount);
+    
     createOrderMutation.mutate();
   };
 
@@ -339,7 +422,7 @@ export default function TransactionPage() {
           No user selected. Please verify a user first.
         </p>
         <Button
-          onClick={() => router.push("/cashier-dashboard/customer-lookup")}
+          onClick={() => router.push("/cashier-dashboard/users")}
           className="mt-4"
         >
           Verify Customer
@@ -373,13 +456,21 @@ export default function TransactionPage() {
             <h1 className="text-3xl font-bold text-gray-900">Transaction</h1>
             <p className="text-gray-600">Add products and process order</p>
           </div>
-          <Button
-            variant="outline"
-            onClick={() => router.push("/cashier-dashboard")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/cashier-dashboard/orders?userId=${userId}`)}
+            >
+              View Orders
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/cashier-dashboard")}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -528,78 +619,94 @@ export default function TransactionPage() {
                 ) : (
                   <>
                     <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {cartItems.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex justify-between items-start border-b pb-4"
-                        >
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm">
-                              {item.product.name}
-                            </h4>
-                            <p className="text-xs text-gray-600">
-                              ₦{item.price.toLocaleString()} each
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 w-6 p-0"
-                              onClick={() => {
-                                if (item.quantity > 1) {
+                      {cartItems.map((item) => {
+                        if (!item) return null;
+                        
+                        const itemPrice = getItemPrice(item);
+                        const itemQuantity = getItemQuantity(item);
+                        const productName = item?.product?.name || "Unknown Product";
+                        const productDescription = item?.product?.description || "";
+                        const itemSubtotal = itemPrice * itemQuantity;
+                        
+                        return (
+                          <div
+                            key={item.id}
+                            className="flex justify-between items-start border-b pb-4"
+                          >
+                            <div className="flex-1">
+                              <h4 className="font-medium text-sm">
+                                {productName}
+                              </h4>
+                              <p className="text-xs text-gray-600 mb-1">
+                                {productDescription}
+                              </p>
+                              <p className="text-xs text-gray-600">
+                                ₦{itemPrice.toLocaleString()} each
+                              </p>
+                              <p className="text-xs font-semibold mt-1 text-green-600">
+                                Subtotal: ₦{itemSubtotal.toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  if (itemQuantity > 1) {
+                                    updateCartMutation.mutate({
+                                      cartItemId: item.id,
+                                      quantity: itemQuantity - 1,
+                                    });
+                                  } else {
+                                    removeFromCartMutation.mutate(item.id);
+                                  }
+                                }}
+                                disabled={
+                                  updateCartMutation.isPending ||
+                                  removeFromCartMutation.isPending
+                                }
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="w-6 text-center text-sm font-medium">
+                                {itemQuantity}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-6 w-6 p-0"
+                                onClick={() =>
                                   updateCartMutation.mutate({
                                     cartItemId: item.id,
-                                    quantity: item.quantity - 1,
-                                  });
-                                } else {
-                                  removeFromCartMutation.mutate(item.id);
+                                    quantity: itemQuantity + 1,
+                                  })
                                 }
-                              }}
-                              disabled={
-                                updateCartMutation.isPending ||
-                                removeFromCartMutation.isPending
-                              }
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-6 text-center text-sm font-medium">
-                              {item.quantity}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 w-6 p-0"
-                              onClick={() =>
-                                updateCartMutation.mutate({
-                                  cartItemId: item.id,
-                                  quantity: item.quantity + 1,
-                                })
-                              }
-                              disabled={updateCartMutation.isPending}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="h-6 w-6 p-0"
-                              onClick={() =>
-                                removeFromCartMutation.mutate(item.id)
-                              }
-                              disabled={removeFromCartMutation.isPending}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
+                                disabled={updateCartMutation.isPending}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-6 w-6 p-0"
+                                onClick={() =>
+                                  removeFromCartMutation.mutate(item.id)
+                                }
+                                disabled={removeFromCartMutation.isPending}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     <div className="mt-6 space-y-4">
                       <div className="flex justify-between items-center text-lg font-bold border-t pt-4">
                         <span>Total:</span>
-                        <span>₦{totalAmount.toLocaleString()}</span>
+                        <span className="text-green-600">₦{totalAmount > 0 ? totalAmount.toLocaleString() : "0"}</span>
                       </div>
 
                       <div className="flex gap-2">
@@ -610,7 +717,7 @@ export default function TransactionPage() {
                           disabled={clearCartMutation.isPending}
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
-                          Clear Cart
+                          {clearCartMutation.isPending ? "Clearing..." : "Clear Cart"}
                         </Button>
                         <Button
                           className="flex-1"
