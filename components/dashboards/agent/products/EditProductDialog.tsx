@@ -128,7 +128,11 @@ export function EditProductDialog({ product, token, onSuccess }: EditProductDial
       onSuccess();
     } catch (error: unknown) {
       console.error('Error updating product:', error);
-      toast.error('Failed to update product');
+      if (axios.isAxiosError(error)) {
+        toast.error(error.response?.data?.message || 'Failed to update product');
+      } else {
+        toast.error('Failed to update product');
+      }
     } finally {
       setLoading(false);
     }
@@ -137,223 +141,247 @@ export function EditProductDialog({ product, token, onSuccess }: EditProductDial
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Edit Product</Button>
+        <Button variant="outline" size="sm" className="w-full  sm:w-auto">
+          Edit Product
+        </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[800px] font-header">
-        <ScrollArea className="h-[600px] w-full p-4">
-          <DialogHeader>
-            <DialogTitle className="mb-4">Edit Product</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Product Information */}
-            <div className="space-y-2">
-              <Label htmlFor="name">Product Name</Label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={3}
-              />
-            </div>
-
-            {/* Pricing and Brand */}
-            <div className="grid grid-cols-2 gap-4">
+      <DialogContent className="max-w-[95vw] w-full mx-2 sm:mx-0 sm:max-w-[800px] max-h-[95vh] font-header p-0">
+        <ScrollArea className="h-full max-h-[95vh]">
+          <div className="p-4 sm:p-6">
+            <DialogHeader className="pb-4">
+              <DialogTitle className="text-lg sm:text-xl">Edit Product</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Product Information */}
               <div className="space-y-2">
-                <Label htmlFor="basePrice">Base Price</Label>
+                <Label htmlFor="name" className="text-sm sm:text-base">Product Name</Label>
                 <Input
-                  id="basePrice"
-                  name="basePrice"
-                  type="number"
-                  value={formData.basePrice}
+                  id="name"
+                  name="name"
+                  value={formData.name}
                   onChange={handleChange}
                   required
+                  className="text-sm sm:text-base"
                 />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="brand">Brand</Label>
-                <Input
-                  id="brand"
-                  name="brand"
-                  value={formData.brand}
+                <Label htmlFor="description" className="text-sm sm:text-base">Description</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
                   onChange={handleChange}
+                  rows={3}
+                  className="text-sm sm:text-base resize-vertical min-h-[80px]"
                 />
               </div>
-            </div>
 
-            {/* Perishable Settings */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="isPerishable">Perishable</Label>
-                <Select
-                  value={formData.isPerishable}
-                  onValueChange={(value) => handleSelectChange('isPerishable', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Is perishable?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="true">Yes</SelectItem>
-                    <SelectItem value="false">No</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* Pricing and Brand */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="basePrice" className="text-sm sm:text-base">Base Price</Label>
+                  <Input
+                    id="basePrice"
+                    name="basePrice"
+                    type="number"
+                    value={formData.basePrice}
+                    onChange={handleChange}
+                    required
+                    className="text-sm sm:text-base"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="brand" className="text-sm sm:text-base">Brand</Label>
+                  <Input
+                    id="brand"
+                    name="brand"
+                    value={formData.brand}
+                    onChange={handleChange}
+                    className="text-sm sm:text-base"
+                  />
+                </div>
               </div>
+
+              {/* Perishable Settings */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="isPerishable" className="text-sm sm:text-base">Perishable</Label>
+                  <Select
+                    value={formData.isPerishable}
+                    onValueChange={(value) => handleSelectChange('isPerishable', value)}
+                  >
+                    <SelectTrigger className="text-sm sm:text-base">
+                      <SelectValue placeholder="Is perishable?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true" className="text-sm sm:text-base">Yes</SelectItem>
+                      <SelectItem value="false" className="text-sm sm:text-base">No</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="shelfLifeDays" className="text-sm sm:text-base">Shelf Life (Days)</Label>
+                  <Input
+                    id="shelfLifeDays"
+                    name="shelfLifeDays"
+                    type="number"
+                    value={formData.shelfLifeDays}
+                    onChange={handleChange}
+                    disabled={formData.isPerishable === 'false'}
+                    className="text-sm sm:text-base"
+                  />
+                </div>
+              </div>
+
+              {/* Unit and Package Type */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="unit" className="text-sm sm:text-base">Unit</Label>
+                  <Select
+                    value={formData.unit}
+                    onValueChange={(value) => handleSelectChange('unit', value)}
+                  >
+                    <SelectTrigger className="text-sm sm:text-base">
+                      <SelectValue placeholder="Select unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="KG" className="text-sm sm:text-base">Kilogram (KG)</SelectItem>
+                      <SelectItem value="G" className="text-sm sm:text-base">Gram (G)</SelectItem>
+                      <SelectItem value="L" className="text-sm sm:text-base">Liter (L)</SelectItem>
+                      <SelectItem value="ML" className="text-sm sm:text-base">Milliliter (ML)</SelectItem>
+                      <SelectItem value="PC" className="text-sm sm:text-base">Piece (PC)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="packageType" className="text-sm sm:text-base">Package Type</Label>
+                  <Select
+                    value={formData.packageType}
+                    onValueChange={(value) => handleSelectChange('packageType', value)}
+                  >
+                    <SelectTrigger className="text-sm sm:text-base">
+                      <SelectValue placeholder="Select package type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Bag" className="text-sm sm:text-base">Bag</SelectItem>
+                      <SelectItem value="Bottle" className="text-sm sm:text-base">Bottle</SelectItem>
+                      <SelectItem value="Box" className="text-sm sm:text-base">Box</SelectItem>
+                      <SelectItem value="Can" className="text-sm sm:text-base">Can</SelectItem>
+                      <SelectItem value="Jar" className="text-sm sm:text-base">Jar</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Category and Status */}
               <div className="space-y-2">
-                <Label htmlFor="shelfLifeDays">Shelf Life (Days)</Label>
+                <Label htmlFor="categoryId" className="text-sm sm:text-base">Category ID</Label>
                 <Input
-                  id="shelfLifeDays"
-                  name="shelfLifeDays"
-                  type="number"
-                  value={formData.shelfLifeDays}
+                  id="categoryId"
+                  name="categoryId"
+                  value={formData.categoryId}
                   onChange={handleChange}
-                  disabled={formData.isPerishable === 'false'}
+                  required
+                  className="text-sm sm:text-base"
                 />
               </div>
-            </div>
 
-            {/* Unit and Package Type */}
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="unit">Unit</Label>
+                <Label htmlFor="active" className="text-sm sm:text-base">Status</Label>
                 <Select
-                  value={formData.unit}
-                  onValueChange={(value) => handleSelectChange('unit', value)}
+                  value={formData.active}
+                  onValueChange={(value) => handleSelectChange('active', value)}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select unit" />
+                  <SelectTrigger className="text-sm sm:text-base">
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="KG">Kilogram (KG)</SelectItem>
-                    <SelectItem value="G">Gram (G)</SelectItem>
-                    <SelectItem value="L">Liter (L)</SelectItem>
-                    <SelectItem value="ML">Milliliter (ML)</SelectItem>
-                    <SelectItem value="PC">Piece (PC)</SelectItem>
+                    <SelectItem value="true" className="text-sm sm:text-base">Active</SelectItem>
+                    <SelectItem value="false" className="text-sm sm:text-base">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Image Uploads */}
               <div className="space-y-2">
-                <Label htmlFor="packageType">Package Type</Label>
-                <Select
-                  value={formData.packageType}
-                  onValueChange={(value) => handleSelectChange('packageType', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select package type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Bag">Bag</SelectItem>
-                    <SelectItem value="Bottle">Bottle</SelectItem>
-                    <SelectItem value="Box">Box</SelectItem>
-                    <SelectItem value="Can">Can</SelectItem>
-                    <SelectItem value="Jar">Jar</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label className="text-sm sm:text-base">Main Product Image</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleMainImageChange}
+                  className="text-sm sm:text-base"
+                />
+                {product.product_image && !mainImageFile && (
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                    Current: {product.product_image.split('/').pop()}
+                  </p>
+                )}
+                {mainImageFile && (
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                    New file: {mainImageFile.name}
+                  </p>
+                )}
               </div>
-            </div>
 
-            {/* Category and Status */}
-            <div className="space-y-2">
-              <Label htmlFor="categoryId">Category ID</Label>
-              <Input
-                id="categoryId"
-                name="categoryId"
-                value={formData.categoryId}
-                onChange={handleChange}
-                required
-              />
-            </div>
+              <div className="space-y-2">
+                <Label className="text-sm sm:text-base">Additional Images</Label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleAdditionalImagesChange}
+                  className="text-sm sm:text-base"
+                />
+                {product.images && product.images.length > 0 && additionalImagesFiles.length === 0 && (
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-1">
+                    <p className="font-medium">Current images:</p>
+                    <ul className="list-disc pl-4 mt-1 space-y-1">
+                      {product.images.map((img, index) => (
+                        <li key={index} className="truncate">
+                          {img.split('/').pop()}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {additionalImagesFiles.length > 0 && (
+                  <div className="text-xs sm:text-sm text-muted-foreground mt-1">
+                    <p className="font-medium">New files:</p>
+                    <ul className="list-disc pl-4 mt-1 space-y-1">
+                      {additionalImagesFiles.map((file, index) => (
+                        <li key={index} className="truncate">
+                          {file.name}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="active">Status</Label>
-              <Select
-                value={formData.active}
-                onValueChange={(value) => handleSelectChange('active', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="true">Active</SelectItem>
-                  <SelectItem value="false">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Image Uploads */}
-            <div className="space-y-2">
-              <Label>Main Product Image</Label>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleMainImageChange}
-              />
-              {product.product_image && !mainImageFile && (
-                <p className="text-sm text-muted-foreground">
-                  Current: {product.product_image}
-                </p>
-              )}
-              {mainImageFile && (
-                <p className="text-sm text-muted-foreground">
-                  New file: {mainImageFile.name}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Additional Images</Label>
-              <Input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={handleAdditionalImagesChange}
-              />
-              {product.images && product.images.length > 0 && additionalImagesFiles.length === 0 && (
-                <div className="text-sm text-muted-foreground">
-                  <p>Current images:</p>
-                  <ul className="list-disc pl-5">
-                    {product.images.map((img, index) => (
-                      <li key={index}>{img}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {additionalImagesFiles.length > 0 && (
-                <div className="text-sm text-muted-foreground">
-                  <p>New files:</p>
-                  <ul className="list-disc pl-5">
-                    {additionalImagesFiles.map((file, index) => (
-                      <li key={index}>{file.name}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-
-            {/* Form Actions */}
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setOpen(false)}
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Product'}
-              </Button>
-            </div>
-          </form>
+              {/* Form Actions */}
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:space-x-2 pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  disabled={loading}
+                  className="w-full sm:w-auto mt-2 sm:mt-0"
+                  size="sm"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full sm:w-auto"
+                  size="sm"
+                >
+                  {loading ? 'Updating...' : 'Update Product'}
+                </Button>
+              </div>
+            </form>
+          </div>
         </ScrollArea>
       </DialogContent>
     </Dialog>

@@ -6,7 +6,7 @@ import { OrdersChart } from '@/components/dashboards/users/OrdersChart';
 import axios from 'axios';
 import { LoanStats } from '@/components/dashboards/users/LoanStats'; 
 
-export default async function AdminDashboard() {
+export default async function EmployeeDashboard() {
   const session = await getServerSession(authOptions);
   
   if (!session?.user?.token) {
@@ -36,11 +36,15 @@ export default async function AdminDashboard() {
       }
     });
     
-    if (addressResponse.data.data?.[1]?.user) {
-      initialLoanData = {
-        loan_unit: addressResponse.data.data[1].user.loan_unit,
-        loan_amount_collected: addressResponse.data.data[1].user.loan_amount_collected
-      };
+    // FIX: Access the first item in the array and get user data from it
+    if (addressResponse.data.data && addressResponse.data.data.length > 0) {
+      const userData = addressResponse.data.data[0].user; // Changed from [1] to [0]
+      if (userData) {
+        initialLoanData = {
+          loan_unit: userData.loan_unit || 0,
+          loan_amount_collected: userData.loan_amount_collected || 0
+        };
+      }
     }
   } catch (error) {
     console.error('Failed to fetch data:', error);
