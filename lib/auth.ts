@@ -1,12 +1,97 @@
+// app/api/auth/[...nextauth]/auth.ts
 import { getServerSession, NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import jwt from 'jsonwebtoken';
 
-// Enhanced error handling
+// Enhanced error handling with user-friendly messages
 class AuthError extends Error {
-  constructor(message: string, public code?: string) {
+  constructor(message: string, public code?: string, public userMessage?: string) {
     super(message);
     this.name = 'AuthError';
+    this.userMessage = userMessage || this.getUserFriendlyMessage(message, code);
+  }
+
+  private getUserFriendlyMessage(message: string, code?: string): string {
+    if (message.includes('fetch') || message.includes('network') || message.includes('ECONNREFUSED') || message.includes('Failed to fetch')) {
+      return 'Unable to connect to the server. Please check your internet connection and try again.';
+    }
+    if (message.includes('timeout') || message.includes('TIMEDOUT')) {
+      return 'Request timed out. Please try again.';
+    }
+    if (message.includes('status: 500')) {
+      return 'Server is currently unavailable. Please try again later.';
+    }
+    if (message.includes('status: 404')) {
+      return 'Service not found. Please contact support.';
+    }
+    if (message.includes('status: 401') || message.includes('status: 403')) {
+      return 'Invalid credentials. Please check your email and password.';
+    }
+    if (message.includes('status: 429')) {
+      return 'Too many login attempts. Please wait a few minutes and try again.';
+    }
+    if (code === 'MISSING_CREDENTIALS') {
+      return 'Email and password are required.';
+    }
+    if (code === 'NO_TOKEN') {
+      return 'Authentication failed. No security token received.';
+    }
+    if (code === 'NO_USER_DATA') {
+      return 'User information not found. Please contact support.';
+    }
+    if (code === 'LOGIN_FAILED') {
+      return 'Invalid email or password. Please try again.';
+    }
+    if (message.toLowerCase().includes('invalid') || message.toLowerCase().includes('incorrect')) {
+      return 'Invalid email or password. Please try again.';
+    }
+    return 'An unexpected error occurred. Please try again.';
+  }
+}
+
+// Enhanced fetch helper with CORS handling
+async function handleAuthFetch(url: string, options: RequestInit) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
+    console.log('🔗 Making API request to:', url);
+    
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...options.headers,
+      },
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      console.error('❌ API response not OK:', {
+        status: response.status,
+        statusText: response.statusText,
+        url: url
+      });
+    }
+    
+    return response;
+  } catch (error: any) {
+    console.error('🔴 Fetch error details:', {
+      errorName: error.name,
+      errorMessage: error.message,
+      url: url
+    });
+    
+    if (error.name === 'AbortError') {
+      throw new AuthError('Request timeout', 'TIMEOUT_ERROR');
+    }
+    if (error.code === 'ECONNREFUSED' || error.message.includes('fetch')) {
+      throw new AuthError('Network connection failed', 'NETWORK_ERROR');
+    }
+    throw new AuthError(error.message, 'FETCH_ERROR');
   }
 }
 
@@ -14,13 +99,41 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
   secret: process.env.NEXTAUTH_SECRET,
   
-  // Remove basePath for Next.js 15 - it's deprecated
-  // The API routes will automatically be at /api/auth/*
-  
+  // Use cookies that work with cross-origin requests
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
+
   session: {
     strategy: "jwt",
     maxAge: 24 * 60 * 60, // 1 day
     updateAge: 60 * 60, // 1 hour
+  },
+
+  // Enhanced logger to handle client errors better
+  logger: {
+    error(code, metadata) {
+      // Don't log CLIENT_FETCH_ERROR as it's usually network-related
+      if (code !== 'CLIENT_FETCH_ERROR') {
+        console.error('🔴 NextAuth Error:', { code, metadata });
+      }
+    },
+    warn(code) {
+      console.warn('🟡 NextAuth Warning:', code);
+    },
+    debug(code, metadata) {
+      if (process.env.NODE_ENV === 'development' && code !== 'CLIENT_FETCH_ERROR') {
+        console.log('🔵 NextAuth Debug:', { code, metadata });
+      }
+    },
   },
 
   pages: {
@@ -47,33 +160,56 @@ export const authOptions: NextAuthOptions = {
             throw new AuthError('Email and password are required', 'MISSING_CREDENTIALS');
           }
 
-          console.log('📡 Calling API:', `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/admin-login`);
+          const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/admin-login`;
+          console.log('📡 Calling API:', apiUrl);
 
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/admin-login`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify({
-                identifier: credentials.identifier,
-                password: credentials.password
-              }),
-            }
-          );
+          // Verify environment variable is set
+          if (!process.env.NEXT_PUBLIC_API_BASE_URL) {
+            console.error('❌ NEXT_PUBLIC_API_BASE_URL is not set');
+            throw new AuthError('Server configuration error', 'CONFIG_ERROR');
+          }
 
-          const data = await response.json();
-          
-          console.log('📡 Admin API Response status:', response.status);
-          console.log('📡 Admin API Response data:', JSON.stringify(data, null, 2));
+          const response = await handleAuthFetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+              identifier: credentials.identifier,
+              password: credentials.password
+            }),
+          });
 
+          // Check if response is OK before trying to parse JSON
           if (!response.ok) {
-            console.log('❌ API error response:', data);
-            const errorMessage = data.message || `Login failed with status: ${response.status}`;
+            let errorData;
+            try {
+              errorData = await response.json();
+            } catch {
+              errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+            }
+            
+            console.log('❌ API error response:', errorData);
+            
+            if (response.status === 401) {
+              throw new AuthError('Invalid email or password', 'INVALID_CREDENTIALS');
+            } else if (response.status === 403) {
+              throw new AuthError('Account suspended or access denied', 'ACCOUNT_SUSPENDED');
+            } else if (response.status === 404) {
+              throw new AuthError('Admin account not found', 'ACCOUNT_NOT_FOUND');
+            } else if (response.status === 429) {
+              throw new AuthError('Too many login attempts', 'RATE_LIMITED');
+            } else if (response.status >= 500) {
+              throw new AuthError('Server is currently unavailable', 'SERVER_ERROR');
+            }
+            
+            const errorMessage = errorData.message || `Login failed with status: ${response.status}`;
             throw new AuthError(errorMessage, 'API_ERROR');
           }
+
+          const data = await response.json();
+          console.log('📡 Admin API Response success:', data.success);
 
           if (!data.success) {
             console.log('❌ API success: false', data);
@@ -109,12 +245,7 @@ export const authOptions: NextAuthOptions = {
             throw new AuthError('No admin data received', 'NO_USER_DATA');
           }
 
-          console.log('✅ Admin data extracted successfully:', {
-            id: adminData.id,
-            email: adminData.email,
-            name: `${adminData.firstname} ${adminData.lastname}`,
-            role: adminData.role
-          });
+          console.log('✅ Admin data extracted successfully');
 
           const role = adminData.role === 'fulfillment_officer' ? 'fulfillment_officer' : 'super_admin';
 
@@ -137,10 +268,7 @@ export const authOptions: NextAuthOptions = {
           return user;
 
         } catch (error: any) {
-          console.error('💥 Admin auth error:', {
-            message: error.message,
-            code: error.code
-          });
+          console.error('💥 Admin auth error:', error.message);
           
           if (error instanceof AuthError) {
             throw error;
@@ -165,32 +293,47 @@ export const authOptions: NextAuthOptions = {
             throw new AuthError('Email and password are required', 'MISSING_CREDENTIALS');
           }
 
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/fulfillment-officer-login`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify({
-                identifier: credentials.identifier,
-                password: credentials.password
-              }),
-            }
-          );
+          const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/fulfillment-officer-login`;
+          console.log('📡 Calling API:', apiUrl);
 
-          const data = await response.json();
-          
-          console.log('📡 Fulfillment officer API Response status:', response.status);
+          const response = await handleAuthFetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+              identifier: credentials.identifier,
+              password: credentials.password
+            }),
+          });
 
           if (!response.ok) {
-            console.log('❌ API error response:', data);
+            let errorData;
+            try {
+              errorData = await response.json();
+            } catch {
+              errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+            }
+            
+            console.log('❌ API error response:', errorData);
+            
+            if (response.status === 401) {
+              throw new AuthError('Invalid email or password', 'INVALID_CREDENTIALS');
+            } else if (response.status === 403) {
+              throw new AuthError('Account access denied', 'ACCESS_DENIED');
+            } else if (response.status >= 500) {
+              throw new AuthError('Server is currently unavailable', 'SERVER_ERROR');
+            }
+            
             throw new AuthError(
-              data.message || `Login failed with status: ${response.status}`, 
+              errorData.message || `Login failed with status: ${response.status}`, 
               'API_ERROR'
             );
           }
+
+          const data = await response.json();
+          console.log('📡 Fulfillment officer API Response success:', data.success);
 
           if (!data.success) {
             console.log('❌ API success: false', data);
@@ -226,7 +369,7 @@ export const authOptions: NextAuthOptions = {
             throw new AuthError('No admin data received', 'NO_USER_DATA');
           }
 
-          console.log('✅ Fulfillment officer data extracted:', adminData);
+          console.log('✅ Fulfillment officer data extracted');
 
           const user = {
             id: adminData.id?.toString(),
@@ -243,7 +386,7 @@ export const authOptions: NextAuthOptions = {
             status: adminData.status || "ACTIVE"
           };
 
-          console.log('✅ Returning user object for fulfillment officer:', user);
+          console.log('✅ Returning user object for fulfillment officer');
           return user;
 
         } catch (error: any) {
@@ -272,32 +415,47 @@ export const authOptions: NextAuthOptions = {
             throw new AuthError('Email and password are required', 'MISSING_CREDENTIALS');
           }
 
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/cashier-login`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify({
-                identifier: credentials.identifier,
-                password: credentials.password
-              }),
-            }
-          );
+          const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/cashier-login`;
+          console.log('📡 Calling API:', apiUrl);
 
-          const data = await response.json();
-          
-          console.log('📡 Cashier API Response status:', response.status);
+          const response = await handleAuthFetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+              identifier: credentials.identifier,
+              password: credentials.password
+            }),
+          });
 
           if (!response.ok) {
-            console.log('❌ API error response:', data);
+            let errorData;
+            try {
+              errorData = await response.json();
+            } catch {
+              errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+            }
+            
+            console.log('❌ API error response:', errorData);
+            
+            if (response.status === 401) {
+              throw new AuthError('Invalid email or password', 'INVALID_CREDENTIALS');
+            } else if (response.status === 403) {
+              throw new AuthError('Cashier account not authorized', 'UNAUTHORIZED');
+            } else if (response.status >= 500) {
+              throw new AuthError('Server is currently unavailable', 'SERVER_ERROR');
+            }
+            
             throw new AuthError(
-              data.message || `Cashier login failed with status: ${response.status}`, 
+              errorData.message || `Cashier login failed with status: ${response.status}`, 
               'API_ERROR'
             );
           }
+
+          const data = await response.json();
+          console.log('📡 Cashier API Response success:', data.success);
 
           if (!data.success) {
             console.log('❌ API success: false', data);
@@ -333,12 +491,7 @@ export const authOptions: NextAuthOptions = {
             throw new AuthError('No cashier data received', 'NO_USER_DATA');
           }
 
-          console.log('✅ Cashier data extracted:', {
-            id: cashierData.id,
-            email: cashierData.email,
-            name: `${cashierData.firstname} ${cashierData.lastname}`,
-            role: cashierData.role
-          });
+          console.log('✅ Cashier data extracted');
 
           const user = {
             id: cashierData.id?.toString() || 'cashier-id',
@@ -356,7 +509,7 @@ export const authOptions: NextAuthOptions = {
             updated_at: cashierData.updated_at
           };
 
-          console.log('✅ Returning user object for cashier:', user);
+          console.log('✅ Returning user object for cashier');
           return user;
 
         } catch (error: any) {
@@ -385,32 +538,47 @@ export const authOptions: NextAuthOptions = {
             throw new AuthError('User ID and OTP are required', 'MISSING_CREDENTIALS');
           }
 
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/verify-otp`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify({
-                userId: credentials.userId,
-                otp: credentials.otp
-              }),
-            }
-          );
+          const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/verify-otp`;
+          console.log('📡 Calling API:', apiUrl);
 
-          const data = await response.json();
-          
-          console.log('📡 Employee OTP API Response status:', response.status);
+          const response = await handleAuthFetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: credentials.userId,
+              otp: credentials.otp
+            })
+          });
 
           if (!response.ok) {
-            console.log('❌ API error response:', data);
+            let errorData;
+            try {
+              errorData = await response.json();
+            } catch {
+              errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+            }
+            
+            console.log('❌ API error response:', errorData);
+            
+            if (response.status === 400) {
+              throw new AuthError('Invalid or expired OTP', 'INVALID_OTP');
+            } else if (response.status === 404) {
+              throw new AuthError('User not found', 'USER_NOT_FOUND');
+            } else if (response.status >= 500) {
+              throw new AuthError('Server is currently unavailable', 'SERVER_ERROR');
+            }
+            
             throw new AuthError(
-              data.message || `OTP verification failed with status: ${response.status}`, 
+              errorData.message || `OTP verification failed with status: ${response.status}`, 
               'API_ERROR'
             );
           }
+
+          const data = await response.json();
+          console.log('📡 Employee OTP API Response success:', data.success);
 
           if (!data.success) {
             console.log('❌ API success: false', data);
@@ -446,7 +614,7 @@ export const authOptions: NextAuthOptions = {
             throw new AuthError('No user data received', 'NO_USER_DATA');
           }
 
-          console.log('✅ Employee data extracted:', userData);
+          console.log('✅ Employee data extracted');
 
           const user = {
             id: userData.id?.toString(),
@@ -465,7 +633,7 @@ export const authOptions: NextAuthOptions = {
             employee_id: userData.employee_id
           };
 
-          console.log('✅ Returning user object for employee:', user);
+          console.log('✅ Returning user object for employee');
           return user;
 
         } catch (error: any) {
@@ -484,13 +652,11 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, profile, credentials }) {
       console.log('🔐 SignIn callback - user role:', user?.role);
       
-      // If user exists, allow sign in
       if (user) {
         console.log('✅ SignIn allowed for user:', user.email);
         return true;
       }
       
-      // If no user, redirect to error with proper error message
       console.log('❌ SignIn denied - no user object');
       return `/auth/error?error=${encodeURIComponent('Authentication failed: No user data returned')}`;
     },
@@ -516,7 +682,7 @@ export const authOptions: NextAuthOptions = {
             ...(user.profile_image && { profile_image: String(user.profile_image) }),
             ...(typeof user.is_temp_password !== 'undefined' && { 
               is_temp_password: Boolean(user.is_temp_password) 
-            }),
+            })
           };
         }
         
@@ -552,7 +718,7 @@ export const authOptions: NextAuthOptions = {
             ...(token.profile_image && { profile_image: String(token.profile_image) }),
             ...(typeof token.is_temp_password !== 'undefined' && { 
               is_temp_password: Boolean(token.is_temp_password) 
-            }),
+            })
           }
         };
 
@@ -578,13 +744,11 @@ export const authOptions: NextAuthOptions = {
     async redirect({ url, baseUrl }) {
       console.log('🔄 Redirect callback - url:', url, 'baseUrl:', baseUrl);
       
-      // Handle successful authentication redirect
       if (url.includes('/api/auth/callback') || url.includes('/api/auth/signin')) {
         console.log('✅ Successful login, redirecting to dashboard');
         return `${baseUrl}/dashboard`;
       }
       
-      // Handle error redirects properly
       if (url.includes('/api/auth/error')) {
         try {
           const errorUrl = new URL(url, baseUrl);
@@ -601,12 +765,10 @@ export const authOptions: NextAuthOptions = {
         return `${baseUrl}/auth/error?error=${encodeURIComponent('Authentication failed')}`;
       }
       
-      // Allow relative URLs
       if (url.startsWith("/")) {
         return `${baseUrl}${url}`;
       }
       
-      // Allow same-origin URLs
       try {
         if (new URL(url).origin === baseUrl) {
           return url;
@@ -615,7 +777,6 @@ export const authOptions: NextAuthOptions = {
         console.error('Invalid URL in redirect:', url);
       }
       
-      // Default to base URL
       return baseUrl;
     }
   },
