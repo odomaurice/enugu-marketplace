@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,8 +16,31 @@ interface ProductDetailsProps {
   token: string;
 }
 
+interface Product {
+  id: string | number;
+  name: string;
+  description: string;
+  basePrice: number;
+  currency: string;
+  brand?: string;
+  isPerishable: boolean;
+  shelfLifeDays?: number;
+  unit: string;
+  packageType: string;
+  active: boolean;
+  categoryId: string | number;
+  category?: {
+    name: string;
+  };
+  product_image?: string;
+  images?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export function ProductDetails({ productId, token }: ProductDetailsProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['admin-product', productId],
@@ -33,7 +55,16 @@ export function ProductDetails({ productId, token }: ProductDetailsProps) {
     }
   });
 
+  const handleSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-product', productId] });
+    toast.success('Product updated successfully!');
+  };
+
   const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) {
+      return;
+    }
+
     try {
       await axios.delete(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/agent/delete-product?product_id=${productId}`,
@@ -49,170 +80,199 @@ export function ProductDetails({ productId, token }: ProductDetailsProps) {
     }
   };
 
-  if (isLoading) return <div>Loading product details...</div>;
-  if (isError) return <div>Error: {(error as Error).message}</div>;
+  if (isLoading) return (
+    <div className="container py-4 sm:py-6 flex justify-center items-center min-h-[50vh]">
+      <div className="text-base sm:text-lg">Loading product details...</div>
+    </div>
+  );
+  
+  if (isError) return (
+    <div className="container py-4 sm:py-6 flex justify-center items-center min-h-[50vh]">
+      <div className="text-base sm:text-lg text-red-600">Error: {(error as Error).message}</div>
+    </div>
+  );
+
+  if (!data) return (
+    <div className="container py-4 sm:py-6 flex justify-center items-center min-h-[50vh]">
+      <div className="text-base sm:text-lg">Product not found</div>
+    </div>
+  );
+
+  const product: Product = data;
 
   return (
-    <div className="container py-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Product Details</h1>
-        <div className="flex space-x-2">
+    <div className="container py-4 sm:py-6 mt-[80px] space-y-4 sm:space-y-6 px-3 sm:px-6">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0">
+        <h1 className="text-xl sm:text-2xl font-bold text-center sm:text-left">Product Details</h1>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
           <EditProductDialog 
-            product={data} 
+            product={product} 
             token={token} 
-            onSuccess={() => router.refresh()} 
+            onSuccess={handleSuccess} 
           />
           <Button 
             variant="destructive" 
             onClick={handleDelete}
+            size="sm"
+            className="w-full sm:w-auto"
           >
             Delete Product
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Product Images */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Images</CardTitle>
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Product Images Card */}
+        <Card className="w-full">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg sm:text-xl">Images</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              {data.product_image && (
-                <div className="relative aspect-square">
-                  <Image
-                    src={data.product_image}
-                    alt={data.name}
-                    fill
-                    className="object-cover rounded-lg"
-                  />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              {/* Main Image */}
+              {product.product_image ? (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-500">Main Image</p>
+                  <div className="relative aspect-square w-full">
+                    <Image
+                      src={product.product_image}
+                      alt={product.name}
+                      fill
+                      className="object-cover rounded-lg"
+                      priority
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-gray-500">Main Image</p>
+                  <div className="relative aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
+                    <span className="text-gray-500 text-sm">No main image</span>
+                  </div>
                 </div>
               )}
-              {data.images?.map((image: string, index: number) => (
-                <div key={index} className="relative aspect-square">
-                  <Image
-                    src={image}
-                    alt={`${data.name} variant ${index + 1}`}
-                    fill
-                    className="object-cover rounded-lg"
-                  />
-                </div>
-              ))}
+              
+              {/* Additional Images */}
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-500">Additional Images</p>
+                {product.images && product.images.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    {product.images.map((image: string, index: number) => (
+                      <div key={index} className="relative aspect-square">
+                        <Image
+                          src={image}
+                          alt={`${product.name} ${index + 1}`}
+                          fill
+                          className="object-cover rounded-lg"
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 16vw"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="relative aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
+                    <span className="text-gray-500 text-sm">No additional images</span>
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Product Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Product Information</CardTitle>
+        {/* Product Information Card */}
+        <Card className="w-full">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg sm:text-xl">Product Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <h2 className="text-xl font-semibold">{data.name}</h2>
-              <p className="text-gray-600">{data.description}</p>
+          <CardContent className="space-y-4 sm:space-y-6">
+            {/* Basic Info */}
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <h2 className="text-lg sm:text-xl font-semibold leading-tight">{product.name}</h2>
+                <p className="text-gray-600 text-sm sm:text-base leading-relaxed">{product.description}</p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Product Details Grid */}
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-1">
-                <p className="text-sm text-gray-500">Base Price</p>
-                <p className="font-medium">
+                <p className="text-xs sm:text-sm text-gray-500">Base Price</p>
+                <p className="font-medium text-sm sm:text-base">
                   {new Intl.NumberFormat('en-NG', {
                     style: 'currency',
-                    currency: data.currency,
-                  }).format(data.basePrice)}
+                    currency: product.currency || 'NGN',
+                  }).format(product.basePrice)}
                 </p>
               </div>
 
               <div className="space-y-1">
-                <p className="text-sm text-gray-500">Category</p>
-                <p className="font-medium">{data.category?.name}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Brand</p>
+                <p className="font-medium text-sm sm:text-base">{product.brand || 'No brand'}</p>
               </div>
 
               <div className="space-y-1">
-                <p className="text-sm text-gray-500">Status</p>
-                <Badge variant={data.active ? 'default' : 'destructive'}>
-                  {data.active ? 'Active' : 'Inactive'}
+                <p className="text-xs sm:text-sm text-gray-500">Category</p>
+                <p className="font-medium text-sm sm:text-base">{product.category?.name || 'No category'}</p>
+              </div>
+
+              <div className="space-y-1">
+                <p className="text-xs sm:text-sm text-gray-500">Status</p>
+                <Badge 
+                  variant={product.active ? 'default' : 'destructive'} 
+                  className="text-xs sm:text-sm"
+                >
+                  {product.active ? 'Active' : 'Inactive'}
                 </Badge>
               </div>
 
               <div className="space-y-1">
-                <p className="text-sm text-gray-500">Perishable</p>
-                <Badge variant={data.isPerishable ? 'default' : 'secondary'}>
-                  {data.isPerishable ? 'Yes' : 'No'}
+                <p className="text-xs sm:text-sm text-gray-500">Perishable</p>
+                <Badge 
+                  variant={product.isPerishable ? 'default' : 'secondary'} 
+                  className="text-xs sm:text-sm"
+                >
+                  {product.isPerishable ? 'Yes' : 'No'}
                 </Badge>
               </div>
 
+              {product.isPerishable && product.shelfLifeDays && (
+                <div className="space-y-1">
+                  <p className="text-xs sm:text-sm text-gray-500">Shelf Life</p>
+                  <p className="font-medium text-sm sm:text-base">{product.shelfLifeDays} days</p>
+                </div>
+              )}
+
               <div className="space-y-1">
-                <p className="text-sm text-gray-500">Unit</p>
-                <p className="font-medium">{data.unit}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Unit</p>
+                <p className="font-medium text-sm sm:text-base">{product.unit}</p>
               </div>
 
               <div className="space-y-1">
-                <p className="text-sm text-gray-500">Package Type</p>
-                <p className="font-medium">{data.packageType}</p>
+                <p className="text-xs sm:text-sm text-gray-500">Package Type</p>
+                <p className="font-medium text-sm sm:text-base">{product.packageType}</p>
               </div>
             </div>
 
-            <div className="space-y-1">
-              <p className="text-sm text-gray-500">Created At</p>
-              <p>{format(new Date(data.createdAt), 'PPPpp')}</p>
+            {/* Timestamps */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t">
+              <div className="space-y-1">
+                <p className="text-xs sm:text-sm text-gray-500">Created At</p>
+                <p className="text-xs sm:text-sm font-medium">
+                  {format(new Date(product.createdAt), 'PPpp')}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs sm:text-sm text-gray-500">Last Updated</p>
+                <p className="text-xs sm:text-sm font-medium">
+                  {format(new Date(product.updatedAt), 'PPpp')}
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
-
-        {/* Variants */}
-        {/* <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Product Variants</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.variants.map((variant: {
-                id: string;
-                name: string;
-                sku: string;
-                image: string;
-                currency: string;
-                price: number;
-                netWeight: number;
-                expiryDate?: string;
-              }) => (
-                <Card key={variant.id}>
-                  <CardHeader className="p-0">
-                    <div className="relative aspect-square">
-                      <Image
-                        src={variant.image}
-                        alt={variant.name}
-                        fill
-                        className="object-cover rounded-t-lg"
-                      />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-4">
-                    <h3 className="font-semibold">{variant.name}</h3>
-                    <p className="text-sm text-gray-600">SKU: {variant.sku}</p>
-                    <p className="font-medium mt-2">
-                      {new Intl.NumberFormat('en-NG', {
-                        style: 'currency',
-                        currency: variant.currency,
-                      }).format(variant.price)}
-                    </p>
-                    <p className="text-sm mt-1">
-                      Net Weight: {variant.netWeight} {data.unit}
-                    </p>
-                    {variant.expiryDate && (
-                      <p className="text-sm">
-                        Expires: {format(new Date(variant.expiryDate), 'PPP')}
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card> */}
       </div>
     </div>
   );
