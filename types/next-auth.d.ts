@@ -16,6 +16,7 @@ declare module "next-auth" {
     phone?: string;
     level?: string;
     employee_id?: string;
+    verification_id?: string;
     government_entity?: string;
     salary_per_month?: number;
     loan_unit?: number;
@@ -58,6 +59,7 @@ declare module "next-auth/jwt" {
     level?: string;
     employee_id?: string;
     government_entity?: string;
+    verification_id?: string;
     salary_per_month?: number;
     loan_unit?: number;
     loan_amount_collected?: number;
