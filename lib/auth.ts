@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-
-=======
-// app/api/auth/[...nextauth]/auth.ts
->>>>>>> ab70c87b6dff4961c84062ce18cc144a38066b4f
 import { getServerSession, NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import jwt from 'jsonwebtoken';
@@ -629,16 +624,12 @@ export const authOptions: NextAuthOptions = {
             token: data.token,
             status: userData.status || "PENDING",
             is_compliance_submitted: userData.is_compliance_submitted || false,
-<<<<<<< HEAD
             // Add all loan-related fields
-=======
->>>>>>> ab70c87b6dff4961c84062ce18cc144a38066b4f
             loan_unit: Number(userData.loan_unit ?? 0),
             loan_amount_collected: Number(userData.loan_amount_collected ?? 0),
             salary_per_month: Number(userData.salary_per_month ?? 0),
             government_entity: userData.government_entity ?? '',
             phone: userData.phone,
-<<<<<<< HEAD
             employee_id: userData.employee_id,
             verification_id: userData.verification_id,
             level: userData.level,
@@ -647,9 +638,6 @@ export const authOptions: NextAuthOptions = {
             otp: userData.otp,
             createdAt: userData.createdAt,
             updatedAt: userData.updatedAt
-=======
-            employee_id: userData.employee_id
->>>>>>> ab70c87b6dff4961c84062ce18cc144a38066b4f
           };
 
           console.log('✅ Returning user object for employee');
@@ -686,13 +674,9 @@ export const authOptions: NextAuthOptions = {
 
         if (user) {
           console.log('✅ Adding user data to JWT token');
-<<<<<<< HEAD
           
           // Create base token object
           const newToken: any = {
-=======
-          token = {
->>>>>>> ab70c87b6dff4961c84062ce18cc144a38066b4f
             ...token,
             id: String(user.id || ''),
             userId: String(user.userId || user.id || ''),
@@ -701,7 +685,6 @@ export const authOptions: NextAuthOptions = {
             role: String(user.role || ''),
             token: String(user.token || ''),
             status: String(user.status || 'ACTIVE'),
-<<<<<<< HEAD
           };
 
           // Add optional fields
@@ -752,25 +735,11 @@ export const authOptions: NextAuthOptions = {
           }
           
           return newToken;
-=======
-            ...(user.username && { username: String(user.username) }),
-            ...(user.firstname && { firstname: String(user.firstname) }),
-            ...(user.lastname && { lastname: String(user.lastname) }),
-            ...(user.profile_image && { profile_image: String(user.profile_image) }),
-            ...(typeof user.is_temp_password !== 'undefined' && { 
-              is_temp_password: Boolean(user.is_temp_password) 
-            })
-          };
->>>>>>> ab70c87b6dff4961c84062ce18cc144a38066b4f
         }
         
         if (trigger === "update" && session?.user) {
           console.log('🔄 Updating JWT token with session data');
-<<<<<<< HEAD
           return { ...token, ...session.user };
-=======
-          token = { ...token, ...session.user };
->>>>>>> ab70c87b6dff4961c84062ce18cc144a38066b4f
         }
         
         return token;
@@ -784,7 +753,6 @@ export const authOptions: NextAuthOptions = {
       try {
         console.log('🔄 Session callback - token role:', token.role);
         
-<<<<<<< HEAD
         // Create the base user object
         const user: any = {
           id: String(token.id || ''),
@@ -846,26 +814,6 @@ export const authOptions: NextAuthOptions = {
         const safeSession = {
           ...session,
           user
-=======
-        const safeSession = {
-          ...session,
-          user: {
-            id: String(token.id || ''),
-            userId: String(token.userId || token.id || ''),
-            name: String(token.name || ''),
-            email: String(token.email || ''),
-            role: String(token.role || ''),
-            token: String(token.token || ''),
-            status: String(token.status || 'ACTIVE'),
-            ...(token.username && { username: String(token.username) }),
-            ...(token.firstname && { firstname: String(token.firstname) }),
-            ...(token.lastname && { lastname: String(token.lastname) }),
-            ...(token.profile_image && { profile_image: String(token.profile_image) }),
-            ...(typeof token.is_temp_password !== 'undefined' && { 
-              is_temp_password: Boolean(token.is_temp_password) 
-            })
-          }
->>>>>>> ab70c87b6dff4961c84062ce18cc144a38066b4f
         };
 
         console.log('✅ Session created successfully for:', safeSession.user.email);

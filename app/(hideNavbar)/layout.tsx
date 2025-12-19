@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
-<<<<<<< HEAD
 
 //@ts-ignore
-=======
->>>>>>> ab70c87b6dff4961c84062ce18cc144a38066b4f
 import "../globals.css";
 import Providers from "@/providers/Providers";
 import Header from "@/components/Header";
