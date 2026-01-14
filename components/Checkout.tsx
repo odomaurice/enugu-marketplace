@@ -693,11 +693,11 @@ export default function CheckoutPage() {
                   <p className="text-sm text-gray-600">Contact fulfillment office for assistance</p>
                 </div>
               </div>
-              <Button variant="outline" className="w-full" asChild>
+              {/* <Button variant="outline" className="w-full" asChild>
                 <Link href="/employee-dashboard/help">
                   Get Support
                 </Link>
-              </Button>
+              </Button> */}
             </CardContent>
           </Card>
         </div>

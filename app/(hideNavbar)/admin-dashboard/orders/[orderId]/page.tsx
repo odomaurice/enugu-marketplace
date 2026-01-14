@@ -78,6 +78,10 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
                   </Badge>
                 </div>
                 <div>
+                  <p className="text-sm text-muted-foreground">Customer</p>
+                  <p className="text-gray-900 dark:text-white font-bold text-[16px]">{order.user.firstname} {order.user.lastname}</p>
+                </div>
+                <div>
                   <p className="text-sm text-muted-foreground">Payment Status</p>
                   <Badge 
                     variant={
@@ -143,7 +147,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {order.items.map((item: any) => (
+            {order?.items?.map((item: any) => (
               <div key={item.id} className="flex gap-4 border-b pb-4 last:border-b-0">
                 <div className="w-20 h-20 bg-muted rounded-md overflow-hidden">
                   <img 
