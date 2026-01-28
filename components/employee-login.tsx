@@ -46,12 +46,10 @@ export default function EmployeeLogin() {
     const returnUrl = searchParams.get('returnUrl') || '/employee-dashboard';
 
       // Handle redirection based on backend's response
-      if (data.nextStep === 'set_password') {
-        window.location.href = `/auth/set-password?userId=${data.userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
-      } else if (data.nextStep === 'verify_password') {
-        window.location.href = `/auth/verify-password?userId=${data.userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
-      } else if (data.nextStep === 'set_phone_number') {
+      if (data.nextStep === 'set_phone_number') {
         window.location.href = `/auth/set-phone-number?userId=${data.userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
+      } else if (data.nextStep === 'verify_otp') {
+        window.location.href = `/auth/verify-otp?userId=${data.userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
       } else {
         throw new Error('Unexpected next step from server');
       }

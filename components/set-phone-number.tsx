@@ -56,7 +56,7 @@ export default function SetPhoneNumber() {
       const returnUrl = searchParams.get('returnUrl') || '/employee-dashboard';
 
       // After setting phone number, redirect to set password
-      window.location.href = `/auth/set-password?userId=${userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
+       window.location.href = `/auth/verify-otp?userId=${userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
 
     } catch (error: any) {
       toast.error(error.message || 'Phone number setup failed');
