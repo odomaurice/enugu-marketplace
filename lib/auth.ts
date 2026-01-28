@@ -1,4 +1,3 @@
-// app/api/auth/[...nextauth]/auth.ts
 import { getServerSession, NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import jwt from 'jsonwebtoken';
@@ -625,12 +624,20 @@ export const authOptions: NextAuthOptions = {
             token: data.token,
             status: userData.status || "PENDING",
             is_compliance_submitted: userData.is_compliance_submitted || false,
+            // Add all loan-related fields
             loan_unit: Number(userData.loan_unit ?? 0),
             loan_amount_collected: Number(userData.loan_amount_collected ?? 0),
             salary_per_month: Number(userData.salary_per_month ?? 0),
             government_entity: userData.government_entity ?? '',
             phone: userData.phone,
-            employee_id: userData.employee_id
+            employee_id: userData.employee_id,
+            verification_id: userData.verification_id,
+            level: userData.level,
+            is_address_set: userData.is_address_set || false,
+            profile_image: userData.profile_image,
+            otp: userData.otp,
+            createdAt: userData.createdAt,
+            updatedAt: userData.updatedAt
           };
 
           console.log('✅ Returning user object for employee');
@@ -667,7 +674,9 @@ export const authOptions: NextAuthOptions = {
 
         if (user) {
           console.log('✅ Adding user data to JWT token');
-          token = {
+          
+          // Create base token object
+          const newToken: any = {
             ...token,
             id: String(user.id || ''),
             userId: String(user.userId || user.id || ''),
@@ -676,19 +685,61 @@ export const authOptions: NextAuthOptions = {
             role: String(user.role || ''),
             token: String(user.token || ''),
             status: String(user.status || 'ACTIVE'),
-            ...(user.username && { username: String(user.username) }),
-            ...(user.firstname && { firstname: String(user.firstname) }),
-            ...(user.lastname && { lastname: String(user.lastname) }),
-            ...(user.profile_image && { profile_image: String(user.profile_image) }),
-            ...(typeof user.is_temp_password !== 'undefined' && { 
-              is_temp_password: Boolean(user.is_temp_password) 
-            })
           };
+
+          // Add optional fields
+          if (user.username) newToken.username = String(user.username);
+          if (user.firstname) newToken.firstname = String(user.firstname);
+          if (user.lastname) newToken.lastname = String(user.lastname);
+          if (user.profile_image) newToken.profile_image = String(user.profile_image);
+          
+          if (typeof user.is_temp_password !== 'undefined') {
+            newToken.is_temp_password = Boolean(user.is_temp_password);
+          }
+          
+          // Add employee-specific fields
+          if (user.phone) newToken.phone = String(user.phone);
+          if (user.level) newToken.level = String(user.level);
+          if (user.employee_id) newToken.employee_id = String(user.employee_id);
+          if (user.government_entity) newToken.government_entity = String(user.government_entity);
+          
+          if (typeof user.salary_per_month !== 'undefined') {
+            newToken.salary_per_month = Number(user.salary_per_month);
+          }
+          
+          if (typeof user.loan_unit !== 'undefined') {
+            newToken.loan_unit = Number(user.loan_unit);
+          }
+          
+          if (typeof user.loan_amount_collected !== 'undefined') {
+            newToken.loan_amount_collected = Number(user.loan_amount_collected);
+          }
+          
+          if (typeof user.is_address_set !== 'undefined') {
+            newToken.is_address_set = Boolean(user.is_address_set);
+          }
+          
+          if (typeof user.is_compliance_submitted !== 'undefined') {
+            newToken.is_compliance_submitted = Boolean(user.is_compliance_submitted);
+          }
+          
+          if (user.verification_id) newToken.verification_id = String(user.verification_id);
+          
+          // Fix for createdAt and updatedAt
+          if (user.createdAt !== undefined) {
+            newToken.createdAt = String(user.createdAt);
+          }
+          
+          if (user.updatedAt !== undefined) {
+            newToken.updatedAt = String(user.updatedAt);
+          }
+          
+          return newToken;
         }
         
         if (trigger === "update" && session?.user) {
           console.log('🔄 Updating JWT token with session data');
-          token = { ...token, ...session.user };
+          return { ...token, ...session.user };
         }
         
         return token;
@@ -702,24 +753,67 @@ export const authOptions: NextAuthOptions = {
       try {
         console.log('🔄 Session callback - token role:', token.role);
         
+        // Create the base user object
+        const user: any = {
+          id: String(token.id || ''),
+          userId: String(token.userId || token.id || ''),
+          name: String(token.name || ''),
+          email: String(token.email || ''),
+          role: String(token.role || ''),
+          token: String(token.token || ''),
+          status: String(token.status || 'ACTIVE'),
+        };
+
+        // Add optional fields if they exist
+        if (token.username) user.username = String(token.username);
+        if (token.firstname) user.firstname = String(token.firstname);
+        if (token.lastname) user.lastname = String(token.lastname);
+        if (token.profile_image) user.profile_image = String(token.profile_image);
+        
+        if (typeof token.is_temp_password !== 'undefined') {
+          user.is_temp_password = Boolean(token.is_temp_password);
+        }
+        
+        // Add employee-specific fields
+        if (token.phone) user.phone = String(token.phone);
+        if (token.level) user.level = String(token.level);
+        if (token.employee_id) user.employee_id = String(token.employee_id);
+        if (token.government_entity) user.government_entity = String(token.government_entity);
+        
+        if (typeof token.salary_per_month !== 'undefined') {
+          user.salary_per_month = Number(token.salary_per_month);
+        }
+        
+        if (typeof token.loan_unit !== 'undefined') {
+          user.loan_unit = Number(token.loan_unit);
+        }
+        
+        if (typeof token.loan_amount_collected !== 'undefined') {
+          user.loan_amount_collected = Number(token.loan_amount_collected);
+        }
+        
+        if (typeof token.is_address_set !== 'undefined') {
+          user.is_address_set = Boolean(token.is_address_set);
+        }
+        
+        if (typeof token.is_compliance_submitted !== 'undefined') {
+          user.is_compliance_submitted = Boolean(token.is_compliance_submitted);
+        }
+        
+        if (token.verification_id) user.verification_id = String(token.verification_id);
+        
+        // Fix for createdAt and updatedAt - check if they exist and are not undefined
+        if (token.createdAt !== undefined) {
+          user.createdAt = String(token.createdAt);
+        }
+        
+        if (token.updatedAt !== undefined) {
+          user.updatedAt = String(token.updatedAt);
+        }
+
         const safeSession = {
           ...session,
-          user: {
-            id: String(token.id || ''),
-            userId: String(token.userId || token.id || ''),
-            name: String(token.name || ''),
-            email: String(token.email || ''),
-            role: String(token.role || ''),
-            token: String(token.token || ''),
-            status: String(token.status || 'ACTIVE'),
-            ...(token.username && { username: String(token.username) }),
-            ...(token.firstname && { firstname: String(token.firstname) }),
-            ...(token.lastname && { lastname: String(token.lastname) }),
-            ...(token.profile_image && { profile_image: String(token.profile_image) }),
-            ...(typeof token.is_temp_password !== 'undefined' && { 
-              is_temp_password: Boolean(token.is_temp_password) 
-            })
-          }
+          user
         };
 
         console.log('✅ Session created successfully for:', safeSession.user.email);
