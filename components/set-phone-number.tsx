@@ -57,7 +57,6 @@ export default function SetPhoneNumber() {
 
       // After setting phone number, redirect to set password
        window.location.href = `/auth/verify-otp?userId=${userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
-
     } catch (error: any) {
       toast.error(error.message || 'Phone number setup failed');
       console.error(error);

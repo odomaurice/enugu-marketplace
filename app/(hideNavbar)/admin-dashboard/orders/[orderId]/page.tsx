@@ -141,7 +141,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
       </div>
 
       {/* Order Items */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>Order Items</CardTitle>
         </CardHeader>
@@ -174,7 +174,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
             ))}
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 }
