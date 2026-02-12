@@ -656,6 +656,7 @@ export default function CheckoutPage() {
                 ) : (
                   'Place Order'
                 )}
+<<<<<<< HEAD
               </Button>
               <p className="text-xs text-gray-500 text-center mt-3">
                 By placing this order, you agree to our Terms of Service and Privacy Policy
@@ -697,7 +698,50 @@ export default function CheckoutPage() {
                 <Link href="/employee-dashboard/help">
                   Get Support
                 </Link>
+=======
+>>>>>>> 65b24dc8aed43ab974ae0fd3fa47f25d7d77b60b
               </Button>
+              <p className="text-xs text-gray-500 text-center mt-3">
+                By placing this order, you agree to our Terms of Service and Privacy Policy
+              </p>
+              {complianceStatus && (
+                <p className="text-xs text-center mt-1 text-gray-400">
+                  Account Status: <span className="font-medium">{complianceStatus}</span>
+                </p>
+              )}
+            </CardContent>
+          </Card>
+          
+          {/* Help Section */}
+          <Card className="mt-4">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-5 w-5 text-blue-600" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" 
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-medium">Need Help?</h4>
+                  <p className="text-sm text-gray-600">Contact fulfillment office for assistance</p>
+                </div>
+              </div>
+              {/* <Button variant="outline" className="w-full" asChild>
+                <Link href="/employee-dashboard/help">
+                  Get Support
+                </Link>
+              </Button> */}
             </CardContent>
           </Card>
         </div>

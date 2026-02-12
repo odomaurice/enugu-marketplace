@@ -110,6 +110,7 @@ export default function OrderConfirmationContent({ order, qrCodeUrl, showExport 
             <div className="space-y-2">
               <h3 className="font-medium text-gray-500 dark:text-gray-400">Date Placed</h3>
               <p className="text-gray-900 dark:text-white">{formatDate(order.placedAt)}</p>
+              
             </div>
             <div className="space-y-2">
               <h3 className="font-medium text-gray-500 dark:text-gray-400">Total Amount</h3>
@@ -117,7 +118,14 @@ export default function OrderConfirmationContent({ order, qrCodeUrl, showExport 
                 {formatCurrency(order.totalAmount, order.currency)}
               </p>
             </div>
+            <h3 className="font-medium  text-gray-500 dark:text-gray-400">Customer Name:</h3>
+            <p className="text-gray-900 text-[30px] dark:text-white font-bold">{order.user.firstname} {order.user.lastname}</p>
+            
           </div>
+          <div className=" ">
+              
+              
+            </div>
         </div>
 
         {/* QR Code Section */}

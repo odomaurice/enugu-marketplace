@@ -129,7 +129,11 @@ export default function AdminCompliancePage() {
   const filteredAndSortedCompliance = useMemo(() => {
     let filtered = [...allCompliance];
 
+<<<<<<< HEAD
     // Apply search filter
+=======
+    
+>>>>>>> 65b24dc8aed43ab974ae0fd3fa47f25d7d77b60b
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter((item) => {
