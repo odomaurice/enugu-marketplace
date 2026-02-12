@@ -25,6 +25,6 @@ export const UserSideBar: UserSideBarType[] = [
       icon: FaOpencart
     },
     { path: "orders", name: "Orders", icon: TbReorder },
-     { path: "addresses", name: "Address", icon: GrMapLocation },
+    //  { path: "addresses", name: "Address", icon: GrMapLocation },
     //  { path: "user-settings", name: "Settings", icon: MdOutlineSettings },
 ];
