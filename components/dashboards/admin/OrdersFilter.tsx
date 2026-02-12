@@ -1,4 +1,4 @@
-// components/dashboards/admin/orders/OrdersFilter.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -27,18 +27,17 @@ export default function OrdersFilter({ orders, onFilterChange }: OrdersFilterPro
       }
     });
     
-    const sortedYears = Array.from(years).sort((a, b) => b - a); // Descending order
+    const sortedYears = Array.from(years).sort((a, b) => b - a); 
     setAvailableYears(sortedYears);
   }, [orders]);
 
-  // Update available months when year changes
   useEffect(() => {
     if (selectedYear && selectedYear !== 'all') {
       const monthsInYear = new Set<number>();
       orders.forEach(order => {
         const orderDate = new Date(order.placedAt);
         if (orderDate.getFullYear().toString() === selectedYear) {
-          monthsInYear.add(orderDate.getMonth()); // 0-11
+          monthsInYear.add(orderDate.getMonth()); 
         }
       });
 

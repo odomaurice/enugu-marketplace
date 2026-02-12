@@ -1,9 +1,19 @@
+export interface User {
+  id: string;
+  firstname: string;
+  lastname: string;
+  email: string | null;
+  phone: string;
+}
+
+
 export interface Order {
   id: string;
   userId: string;
   addressId: string;
   totalAmount: number;
   currency: string;
+  user: User;
   paymentStatus: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
   orderStatus: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
   trackingCode: string | null;

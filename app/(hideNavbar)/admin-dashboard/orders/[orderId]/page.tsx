@@ -137,13 +137,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
       </div>
 
       {/* Order Items */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>Order Items</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {order.items.map((item: any) => (
+           {(order.items ?? []).map((item: any) => (
+
               <div key={item.id} className="flex gap-4 border-b pb-4 last:border-b-0">
                 <div className="w-20 h-20 bg-muted rounded-md overflow-hidden">
                   <img 
@@ -170,7 +171,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ or
             ))}
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 }

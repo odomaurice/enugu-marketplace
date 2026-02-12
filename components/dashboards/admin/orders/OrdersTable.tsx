@@ -27,49 +27,86 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import OrdersFilter from "../OrdersFilter";
 
 interface OrdersTableProps {
   orders: Order[];
 }
 
+
 export const columns: ColumnDef<Order>[] = [
   {
     accessorKey: "id",
     header: "Order ID",
     cell: ({ row }) => (
-      <span className="font-medium">{row.original.id.substring(0, 8)}...</span>
+      <span className="font-medium">
+        {row.original.id.substring(0, 8)}...
+      </span>
     ),
   },
+
+  {
+    id: "customerName",
+    header: "Customer Name",
+
+    // ⭐ Derive value safely
+    accessorFn: (row) =>
+      `${row.user?.firstname ?? ""} ${row.user?.lastname ?? ""}`,
+
+    cell: ({ getValue }) => {
+      const name = getValue<string>();
+
+      return (
+        <span className="font-medium">
+          {name.length > 18 ? `${name.substring(0, 18)}...` : name}
+        </span>
+      );
+    },
+  },
+
   {
     accessorKey: "placedAt",
     header: "Date",
-    cell: ({ row }) => new Date(row.original.placedAt).toLocaleDateString(),
+    cell: ({ row }) =>
+      new Date(row.original.placedAt).toLocaleDateString(),
   },
+
   {
     accessorKey: "totalAmount",
     header: "Amount",
     cell: ({ row }) => formatCurrency(row.original.totalAmount),
   },
+
   {
     accessorKey: "orderStatus",
     header: "Status",
-    cell: ({ row }) => (
-      <Badge
-        className="bg-green-700"
-        variant={
-          row.original.orderStatus === "DELIVERED"
-            ? "secondary"
-            : row.original.orderStatus === "CANCELLED"
-            ? "destructive"
-            : "default"
-        }
-      >
-        {row.original.orderStatus}
-      </Badge>
-    ),
+    cell: ({ row }) => {
+      const status = row.original.orderStatus;
+
+      return (
+        <Badge
+          className={
+            status === "DELIVERED"
+              ? "bg-green-700"
+              : status === "CANCELLED"
+              ? ""
+              : "bg-yellow-600"
+          }
+          variant={
+            status === "DELIVERED"
+              ? "secondary"
+              : status === "CANCELLED"
+              ? "destructive"
+              : "default"
+          }
+        >
+          {status}
+        </Badge>
+      );
+    },
   },
+
   {
     id: "actions",
     cell: ({ row }) => (
@@ -86,11 +123,21 @@ export const columns: ColumnDef<Order>[] = [
 export default function OrdersTable({ orders }: OrdersTableProps) {
   const [filteredOrders, setFilteredOrders] = useState<Order[]>(orders);
 
+  /**
+   ✅ VERY IMPORTANT FIX
+   When new orders arrive from API,
+   update filtered state automatically.
+  */
+  useEffect(() => {
+    setFilteredOrders(orders);
+  }, [orders]);
+
   const table = useReactTable({
     data: filteredOrders,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+
     initialState: {
       pagination: {
         pageSize: 10,
@@ -101,9 +148,9 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
   return (
     <div>
       {/* Filter Component */}
-      <OrdersFilter 
-        orders={orders} 
-        onFilterChange={setFilteredOrders} 
+      <OrdersFilter
+        orders={orders}
+        onFilterChange={setFilteredOrders}
       />
 
       <Table>
@@ -121,20 +168,27 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
             </TableRow>
           ))}
         </TableHeader>
+
         <TableBody>
-          {table.getRowModel().rows?.length ? (
+          {table.getRowModel().rows.length ? (
             table.getRowModel().rows.map((row) => (
               <TableRow key={row.id}>
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    {flexRender(
+                      cell.column.columnDef.cell,
+                      cell.getContext()
+                    )}
                   </TableCell>
                 ))}
               </TableRow>
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
+              <TableCell
+                colSpan={columns.length}
+                className="h-24 text-center"
+              >
                 No orders found
               </TableCell>
             </TableRow>
@@ -145,7 +199,8 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
       {/* Pagination Controls */}
       <div className="flex items-center justify-between px-2 mt-4">
         <div className="flex-1 text-sm text-muted-foreground">
-          Showing {table.getRowModel().rows.length} of {filteredOrders.length} orders
+          Showing {table.getRowModel().rows.length} of{" "}
+          {filteredOrders.length} orders
           {filteredOrders.length !== orders.length && (
             <span className="text-blue-600 ml-1">
               (filtered from {orders.length} total)
@@ -154,19 +209,17 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
         </div>
 
         <div className="flex items-center space-x-6 lg:space-x-8">
+          {/* Rows per page */}
           <div className="flex items-center space-x-2">
             <p className="text-sm font-medium">Rows per page</p>
-            <label htmlFor="rows-per-page" className="sr-only">
-              Rows per page
-            </label>
+
             <select
-              id="rows-per-page"
               aria-label="Rows per page"
               className="h-8 w-[70px] rounded-md border border-input bg-background"
               value={table.getState().pagination.pageSize}
-              onChange={(e) => {
-                table.setPageSize(Number(e.target.value));
-              }}
+              onChange={(e) =>
+                table.setPageSize(Number(e.target.value))
+              }
             >
               {[5, 10, 20, 30, 40, 50].map((pageSize) => (
                 <option key={pageSize} value={pageSize}>
@@ -176,11 +229,13 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
             </select>
           </div>
 
-          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+          {/* Page info */}
+          <div className="flex w-[120px] items-center justify-center text-sm font-medium">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
             {table.getPageCount()}
           </div>
 
+          {/* Pagination buttons */}
           <div className="flex items-center space-x-2">
             <Button
               variant="outline"
@@ -188,34 +243,35 @@ export default function OrdersTable({ orders }: OrdersTableProps) {
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
             >
-              <span className="sr-only">Go to first page</span>
               <ChevronsLeft className="h-4 w-4" />
             </Button>
+
             <Button
               variant="outline"
               className="h-8 w-8 p-0"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
-              <span className="sr-only">Go to previous page</span>
               <ChevronLeft className="h-4 w-4" />
             </Button>
+
             <Button
               variant="outline"
               className="h-8 w-8 p-0"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
-              <span className="sr-only">Go to next page</span>
               <ChevronRight className="h-4 w-4" />
             </Button>
+
             <Button
               variant="outline"
               className="hidden h-8 w-8 p-0 lg:flex"
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              onClick={() =>
+                table.setPageIndex(table.getPageCount() - 1)
+              }
               disabled={!table.getCanNextPage()}
             >
-              <span className="sr-only">Go to last page</span>
               <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
