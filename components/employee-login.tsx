@@ -45,14 +45,11 @@ export default function EmployeeLogin() {
     const searchParams = new URLSearchParams(window.location.search);
     const returnUrl = searchParams.get('returnUrl') || '/employee-dashboard';
 
-    //  window.location.href = `/auth/verify-otp?userId=${
-    //     data.userId
-    //   }&returnUrl=${encodeURIComponent(returnUrl)}`;
-
-        if (data.nextStep === 'verify_password') {
-        window.location.href = `/auth/verify-password?userId=${data.userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
-      } else if (data.nextStep === 'set_phone_number') {
+      // Handle redirection based on backend's response
+      if (data.nextStep === 'set_phone_number') {
         window.location.href = `/auth/set-phone-number?userId=${data.userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
+      } else if (data.nextStep === 'verify_otp') {
+        window.location.href = `/auth/verify-otp?userId=${data.userId}&returnUrl=${encodeURIComponent(returnUrl)}`;
       } else {
         throw new Error('Unexpected next step from server');
       }

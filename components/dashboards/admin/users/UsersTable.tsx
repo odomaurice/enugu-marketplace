@@ -15,11 +15,11 @@ import { UserWithRelations } from "@/types/index";
 import { useState, useMemo } from "react";
 
 const columns: ColumnDef<UserWithRelations>[] = [
-  {
-    accessorKey: "employee_id",
-    header: "Employee ID",
-    cell: ({ row }) => <div className="font-medium">{row.getValue("employee_id") || "N/A"}</div>,
-  },
+  // {
+  //   accessorKey: "employee_id",
+  //   header: "Employee ID",
+  //   cell: ({ row }) => <div className="font-medium">{row.getValue("employee_id") || "N/A"}</div>,
+  // },
   {
     accessorKey: "verification_id",
     header: "Verification ID",
@@ -33,11 +33,11 @@ const columns: ColumnDef<UserWithRelations>[] = [
       return <div className="font-medium">{name || "N/A"}</div>;
     },
   },
-  {
-    accessorKey: "email",
-    header: "Email",
-    cell: ({ row }) => <div className="text-blue-600 hover:underline">{row.getValue("email") || "N/A"}</div>,
-  },
+  // {
+  //   accessorKey: "email",
+  //   header: "Email",
+  //   cell: ({ row }) => <div className="text-blue-600 hover:underline">{row.getValue("email") || "N/A"}</div>,
+  // },
   {
     accessorKey: "phone",
     header: "Phone",
@@ -416,7 +416,7 @@ export function AdminUsersTable({ initialUsers, token }: AdminUsersTableProps) {
       </div>
 
       {/* Government Entities Quick Export Panel */}
-      <div className="bg-gray-50 p-4 rounded-lg border">
+      {/* <div className="bg-gray-50 p-4 rounded-lg border">
         <h3 className="text-sm font-semibold text-gray-700 mb-2">Quick Export by Government Entity:</h3>
         <div className="flex flex-wrap gap-2">
           {governmentEntities.map((entity: string) => {
@@ -439,7 +439,7 @@ export function AdminUsersTable({ initialUsers, token }: AdminUsersTableProps) {
             );
           })}
         </div>
-      </div>
+      </div> */}
 
       {/* Users Table */}
       <div className="rounded-md border shadow-sm">

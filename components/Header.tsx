@@ -208,7 +208,7 @@ const Header = () => {
                 </Button>
                 <Button
                   asChild
-                  className="rounded-md bg-orange-600 hover:bg-orange-700 px-4 py-2 text-white"
+                  className="rounded-md bg-orange-600 hover:bg-orange-700 p-[1.7rem] text-white"
                 >
                   <Link href="/employee-login">Get Started</Link>
                 </Button>
